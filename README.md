@@ -1,6 +1,17 @@
 # Pensieve — AI-Powered Zettelkasten Knowledge Graph & Link Decoder
 
-**Pensieve** is a full-stack, bi-directional personal knowledge management (PKM) application inspired by Obsidian and Roam Research. It features live OpenRouter AI key authentication, NVIDIA Nemotron model support, 10+ Model Context Protocol (MCP) server integrations, terminal-level Git clone repository extraction, and interactive 2D physics graph visualization.
+[![Deploy with Vercel](https.vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FShivasomesh-cpu%2FPensieve)
+
+**Pensieve** is a full-stack, bi-directional personal knowledge management (PKM) application inspired by Obsidian and Roam Research. It features live OpenRouter AI key authentication, NVIDIA Nemotron model support, 10+ Model Context Protocol (MCP) server integrations, terminal-level Git clone repository extraction, Vercel Serverless deployment, and interactive 2D physics graph visualization.
+
+---
+
+## 🌐 Live Vercel Deployment Architecture
+
+Pensieve is optimized to run seamlessly as a hybrid Serverless Single Page Application on **Vercel**:
+- **API Serverless Handler**: REST endpoints (`/api/*`) run as lightweight Node serverless functions in `api/index.ts`.
+- **Static Asset Serving**: Vite frontend assets are statically compiled into `dist/` and served via Vercel's Edge CDN.
+- **Serverless SQLite Engine**: Uses `sql.js` (WebAssembly SQLite) initialized in `/tmp/pensieve.sqlite` to prevent read-only filesystem errors (`EROFS`).
 
 ---
 
@@ -8,7 +19,7 @@
 
 ### 1. 🧬 AI Ingestion & Link Decoder (OpenRouter & Nemotron)
 - **OpenRouter API Key Login**: Enter your OpenRouter key directly in the UI to authenticate and choose from models like **NVIDIA Nemotron 70B Instruct**, **Nemotron 4 340B**, **Claude 3.5 Sonnet**, and **Llama 3.3 70B**.
-- **Terminal Git Clone Analyzer**: Ingest any GitHub repository (`https://github.com/user/repo`). The backend uses terminal execution (`git clone --depth 1`) to extract file trees, package manifests, and README documentation before feeding it into Nemotron to generate interconnected Zettelkasten notes.
+- **Terminal Git Clone Analyzer**: Ingest any GitHub repository (`https://github.com/user/repo`). The backend uses terminal execution (`git clone --depth 1`) or GitHub REST API fallback to extract file trees, package manifests, and README documentation before feeding it into Nemotron to generate interconnected Zettelkasten notes.
 - **Link & Document Decoder**: Ingest YouTube links, Wikipedia articles, web URLs, PDFs, Markdown files, or images into automatically linked knowledge nodes with `[[Wikilinks]]`.
 
 ### 2. 🔌 Model Context Protocol (MCP) Server Hub
@@ -37,29 +48,25 @@
 
 ---
 
-## 🚀 Quick Start (Local Development)
+## 🚀 Deployment Guide (Vercel)
 
-### Prerequisites
-- Node.js (v18 or higher)
-- Git CLI installed on host terminal
+### Option 1: 1-Click Vercel Import
+1. Push your repository to GitHub: `https://github.com/Shivasomesh-cpu/Pensieve`
+2. Open [Vercel Dashboard](https://vercel.com/dashboard) and click **Add New** > **Project**.
+3. Import `Shivasomesh-cpu/Pensieve`.
+4. Deploy! Vercel automatically detects the `vercel.json` rewrites and Vite build settings.
 
-### 1. Installation
+### Option 2: Local Development
 ```bash
-git clone https://github.com/YOUR_USERNAME/pensieve-knowledge-graph.git
-cd pensieve-knowledge-graph
+# 1. Clone repository
+git clone https://github.com/Shivasomesh-cpu/Pensieve.git
+cd Pensieve
+
+# 2. Install dependencies
 npm install
-```
 
-### 2. Run Development Server
-```bash
+# 3. Start development server
 npm run dev
-```
-Open `http://localhost:3000` in your browser.
-
-### 3. Build & Production Start
-```bash
-npm run build
-npm start
 ```
 
 ---
@@ -67,19 +74,23 @@ npm start
 ## 🔑 AI Key Configuration
 
 You can use Pensieve in two ways:
-1. **In-App OpenRouter Login**: Click the **"OpenRouter Key"** button in the top toolbar to enter your `sk-or-v1-...` key and choose your preferred Nemotron model.
-2. **Server Environment Variable**: Alternatively, set `GEMINI_API_KEY` in your `.env` file for automatic Gemini 2.5 Flash fallback decoding.
+1. **In-App OpenRouter Key Login**: Click the **"OpenRouter Key"** button in the top toolbar to enter your `sk-or-v1-...` key (stored locally in browser headers).
+2. **Server Environment Variable**: Optionally set `GEMINI_API_KEY` in your `.env` file as an automatic fallback model.
 
 ---
 
 ## 🛠️ Project Architecture
 
 ```
-pensieve/
-├── server.ts               # Express server with Vite middleware & REST endpoints
+Pensieve/
+├── api/
+│   └── index.ts            # Vercel Serverless Function API entry point
+├── server.ts               # Local standalone Express server
+├── vercel.json             # Vercel build & route rewrite configuration
 ├── server/
+│   ├── app.ts              # Modular Express app routes and API definitions
 │   ├── db.ts               # SQLite database setup, schema, and Wikilink graph engine
-│   └── ingest.ts           # Terminal git clone execution & OpenRouter Nemotron AI decoding
+│   └── ingest.ts           # Git clone execution & OpenRouter Nemotron AI decoding
 ├── src/
 │   ├── App.tsx             # Main layout, global state, and modal orchestrator
 │   ├── components/
@@ -88,31 +99,10 @@ pensieve/
 │   │   ├── RightPane.tsx           # 2D canvas force graph & backlinks inspector
 │   │   ├── IngestModal.tsx         # Link & File ingestion interface
 │   │   ├── OpenRouterLoginModal.tsx# OpenRouter key authentication modal
+│   │   ├── AboutModal.tsx          # About & Vercel deployment modal
 │   │   └── McpHubModal.tsx         # Model Context Protocol server hub
 │   └── types.ts            # TypeScript interfaces
 └── package.json            # Scripts & dependencies
-```
-
----
-
-## 📦 How to Push to GitHub
-
-Execute the following commands in your terminal to push this project to your GitHub repository:
-
-```bash
-# 1. Initialize Git repository
-git init
-
-# 2. Add all files and make initial commit
-git add .
-git commit -m "Initial commit: Pensieve PKM with OpenRouter Nemotron AI and MCP Hub"
-
-# 3. Create a new repository on GitHub (https://github.com/new) and link it
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git
-
-# 4. Push to GitHub
-git push -u origin main
 ```
 
 ---

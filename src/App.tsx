@@ -6,6 +6,7 @@ import { DeleteWarningModal } from './components/DeleteWarningModal';
 import { IngestModal } from './components/IngestModal';
 import { OpenRouterLoginModal } from './components/OpenRouterLoginModal';
 import { McpHubModal, McpServer } from './components/McpHubModal';
+import { AboutModal } from './components/AboutModal';
 import { PublicShareView } from './components/PublicShareView';
 import { Note, SearchFilters, NoteBacklinksResponse, GraphData, StreakInfo } from './types';
 
@@ -80,13 +81,13 @@ const INITIAL_MCP_SERVERS: McpServer[] = [
     description: 'Extract component hierarchies, design tokens, color variables, and frame specs.',
     endpoint: 'https://mcp.figma.com/v1',
     isEnabled: true,
-    iconName: 'layers',
+    iconName: 'figma',
   },
   {
-    id: 'slack-discord-mcp',
+    id: 'slack-mcp',
     name: 'Slack & Discord Thread MCP',
-    category: 'Communications',
-    description: 'Summarize chat threads, action items, team decisions, and developer notes.',
+    category: 'Team Communication',
+    description: 'Index channel discussions, decision logs, and engineering incident post-mortems.',
     endpoint: 'https://mcp.chat-bridge.org',
     isEnabled: true,
     iconName: 'message',
@@ -126,6 +127,7 @@ export default function App() {
   const [isIngestModalOpen, setIsIngestModalOpen] = useState(false);
   const [isOpenRouterModalOpen, setIsOpenRouterModalOpen] = useState(false);
   const [isMcpHubModalOpen, setIsMcpHubModalOpen] = useState(false);
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
 
   // OpenRouter & AI State
   const [openRouterApiKey, setOpenRouterApiKey] = useState<string>(
@@ -462,6 +464,7 @@ export default function App() {
         onOpenIngestModal={() => setIsIngestModalOpen(true)}
         onOpenOpenRouterModal={() => setIsOpenRouterModalOpen(true)}
         onOpenMcpHubModal={() => setIsMcpHubModalOpen(true)}
+        onOpenAboutModal={() => setIsAboutModalOpen(true)}
         onClearAllNotes={handleClearAllNotes}
         openRouterApiKey={openRouterApiKey}
         filters={filters}
@@ -525,6 +528,12 @@ export default function App() {
         mcpServers={mcpServers}
         onToggleServer={handleToggleMcpServer}
         onAddCustomServer={handleAddCustomMcpServer}
+      />
+
+      {/* About & Vercel Details Modal */}
+      <AboutModal
+        isOpen={isAboutModalOpen}
+        onClose={() => setIsAboutModalOpen(false)}
       />
 
       {/* Linked Reference Warning Modal */}

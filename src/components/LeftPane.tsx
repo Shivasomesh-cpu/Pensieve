@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, BookOpen, Flame, Tag as TagIcon, X, Calendar, FileText, Ghost, Sparkles, Link, Key, Network, Trash2 } from 'lucide-react';
+import { Search, Plus, BookOpen, Flame, Tag as TagIcon, X, Calendar, FileText, Ghost, Sparkles, Link, Key, Network, Trash2, Info } from 'lucide-react';
 import { Note, SearchFilters, StreakInfo } from '../types';
 
 interface LeftPaneProps {
@@ -11,6 +11,7 @@ interface LeftPaneProps {
   onOpenIngestModal: () => void;
   onOpenOpenRouterModal: () => void;
   onOpenMcpHubModal: () => void;
+  onOpenAboutModal: () => void;
   onClearAllNotes: () => void;
   openRouterApiKey: string;
   filters: SearchFilters;
@@ -29,6 +30,7 @@ export const LeftPane: React.FC<LeftPaneProps> = ({
   onOpenIngestModal,
   onOpenOpenRouterModal,
   onOpenMcpHubModal,
+  onOpenAboutModal,
   onClearAllNotes,
   openRouterApiKey,
   filters,
@@ -41,7 +43,7 @@ export const LeftPane: React.FC<LeftPaneProps> = ({
     <div className="w-80 flex-shrink-0 h-full border-r border-[#5c7c89]/30 bg-[#FFFFFF] flex flex-col select-none">
       {/* Brand Header */}
       <div className="p-3 border-b border-[#1f4959] flex items-center justify-between bg-[#011425]">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={onOpenAboutModal} title="About Pensieve & Vercel Info">
           <div className="w-7 h-7 rounded bg-[#1f4959] flex items-center justify-center text-[#FFFFFF] font-bold text-sm font-serif-title shadow-sm border border-[#5c7c89]/40">
             P
           </div>
@@ -86,14 +88,24 @@ export const LeftPane: React.FC<LeftPaneProps> = ({
           <span>{openRouterApiKey ? 'OpenRouter Connected' : 'OpenRouter Key'}</span>
         </button>
 
-        <button
-          onClick={onOpenMcpHubModal}
-          className="flex items-center gap-1.5 px-2 py-1 bg-[#FFFFFF] border border-[#5c7c89]/40 rounded hover:border-[#1f4959] text-[10px] font-semibold text-[#1f4959] transition-colors cursor-pointer"
-          title="Manage MCP Tool Servers"
-        >
-          <Network className="w-3 h-3 text-[#1f4959]" />
-          <span>MCP Hub</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onOpenMcpHubModal}
+            className="flex items-center gap-1.5 px-2 py-1 bg-[#FFFFFF] border border-[#5c7c89]/40 rounded hover:border-[#1f4959] text-[10px] font-semibold text-[#1f4959] transition-colors cursor-pointer"
+            title="Manage MCP Tool Servers"
+          >
+            <Network className="w-3 h-3 text-[#1f4959]" />
+            <span>MCP Hub</span>
+          </button>
+
+          <button
+            onClick={onOpenAboutModal}
+            className="p-1 bg-[#FFFFFF] border border-[#5c7c89]/40 rounded hover:border-[#1f4959] text-[#1f4959] transition-colors cursor-pointer"
+            title="About Pensieve & Vercel Details"
+          >
+            <Info className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Journal & Streak Action Bar */}
