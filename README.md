@@ -60,7 +60,7 @@ Pensieve is an ultra-modern, bi-directional personal knowledge management (PKM) 
 Dynamically parses all `[[Wikilinks]]` across your vault to generate a real-time, interactive physics simulation canvas. Nodes dynamically scale in size based on link connections, and automatically surface placeholder **Ghost Nodes** for references you haven't written yet.
 
 <p align="center">
-  <img src="public/screenshots/01-interactive-knowledge-graph.jpg" alt="Interactive Knowledge Graph" width="100%" />
+  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/01-interactive-knowledge-graph.jpg" alt="Interactive Knowledge Graph" width="100%" />
 </p>
 
 **Key Capabilities:**
@@ -75,7 +75,7 @@ Dynamically parses all `[[Wikilinks]]` across your vault to generate a real-time
 A dual-mode typography editor built for deep thought. Switch effortlessly between raw Markdown input and a live rendered preview with full mathematical formula rendering, code block syntax highlighting, and auto-generated reading statistics.
 
 <p align="center">
-  <img src="public/screenshots/02-zettelkasten-markdown-editor.jpg" alt="Zettelkasten Markdown Editor" width="100%" />
+  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/02-zettelkasten-markdown-editor.jpg" alt="Zettelkasten Markdown Editor" width="100%" />
 </p>
 
 **Key Capabilities:**
@@ -90,7 +90,7 @@ A dual-mode typography editor built for deep thought. Switch effortlessly betwee
 Integrated directly with OpenRouter AI using **Llama 3.3 70B Instruct**. The AI copilot acts as a research co-thinker—summarizing dense documents, auto-generating tags, and automatically breaking long essays down into interconnected atomic Zettel notes.
 
 <p align="center">
-  <img src="public/screenshots/03-ai-copilot-research-assistant.jpg" alt="AI Research Copilot" width="100%" />
+  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/03-ai-copilot-research-assistant.jpg" alt="AI Research Copilot" width="100%" />
 </p>
 
 **Key Capabilities:**
@@ -105,7 +105,7 @@ Integrated directly with OpenRouter AI using **Llama 3.3 70B Instruct**. The AI 
 Connect your knowledge graph directly to external developer tools, cloud data, and external APIs using the **Model Context Protocol (MCP)**.
 
 <p align="center">
-  <img src="public/screenshots/04-mcp-server-hub.jpg" alt="Model Context Protocol MCP Hub" width="100%" />
+  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/04-mcp-server-hub.jpg" alt="Model Context Protocol MCP Hub" width="100%" />
 </p>
 
 **Pre-configured MCP Server Integrations:**
@@ -126,7 +126,7 @@ Connect your knowledge graph directly to external developer tools, cloud data, a
 Paste any website URL, YouTube link, Wikipedia article, or GitHub repository (`https://github.com/user/repo`). Pensieve executes deep content fetching—cloning Git repositories via terminal execution—to automatically parse file trees and READMEs into an interconnected Zettelkasten note collection.
 
 <p align="center">
-  <img src="public/screenshots/05-link-decoder-ingestion.jpg" alt="Web Link Ingestion and Git Decoder" width="100%" />
+  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/05-link-decoder-ingestion.jpg" alt="Web Link Ingestion and Git Decoder" width="100%" />
 </p>
 
 **Key Capabilities:**
@@ -140,7 +140,7 @@ Paste any website URL, YouTube link, Wikipedia article, or GitHub repository (`h
 Never lose context. The dedicated Backlinks Inspector indexes both explicit `[[Wikilinks]]` referencing the active note and **Unlinked Mentions** found throughout your vault.
 
 <p align="center">
-  <img src="public/screenshots/06-bidirectional-backlinks-panel.jpg" alt="Bi-directional Backlinks Inspector" width="100%" />
+  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/06-bidirectional-backlinks-panel.jpg" alt="Bi-directional Backlinks Inspector" width="100%" />
 </p>
 
 **Key Capabilities:**
@@ -154,7 +154,7 @@ Never lose context. The dedicated Backlinks Inspector indexes both explicit `[[W
 Stay consistent with built-in daily journaling. Track your active writing streak, monitor daily word count goals, and visualize your historical knowledge creation via an activity heatmap.
 
 <p align="center">
-  <img src="public/screenshots/07-journal-streak-habit-tracker.jpg" alt="Daily Journal and Habit Tracker" width="100%" />
+  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/07-journal-streak-habit-tracker.jpg" alt="Daily Journal and Habit Tracker" width="100%" />
 </p>
 
 **Key Capabilities:**
