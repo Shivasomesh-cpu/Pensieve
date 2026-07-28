@@ -17,7 +17,7 @@ const INITIAL_MCP_SERVERS: McpServer[] = [
     category: 'Source Code & Repos',
     description: 'Direct repository cloning, file trees, commit history, issue tracking, and PR analysis.',
     endpoint: 'https://mcp.github.com/v1',
-    isEnabled: true,
+    isEnabled: false,
     iconName: 'github',
   },
   {
@@ -26,7 +26,7 @@ const INITIAL_MCP_SERVERS: McpServer[] = [
     category: 'Academic & Science',
     description: 'Fetch peer-reviewed research papers, LaTeX formulas, citations, and author graphs.',
     endpoint: 'https://mcp.arxiv.org/sse',
-    isEnabled: true,
+    isEnabled: false,
     iconName: 'book',
   },
   {
@@ -35,7 +35,7 @@ const INITIAL_MCP_SERVERS: McpServer[] = [
     category: 'Knowledge Base',
     description: 'Deep encyclopedic entity disambiguation, Wikidata items, and historical cross-links.',
     endpoint: 'https://mcp.wikimedia.org/api',
-    isEnabled: true,
+    isEnabled: false,
     iconName: 'globe',
   },
   {
@@ -44,7 +44,7 @@ const INITIAL_MCP_SERVERS: McpServer[] = [
     category: 'Video & Media',
     description: 'Extract auto-captions, timestamps, chapter breakdowns, and speaker summaries.',
     endpoint: 'https://mcp.youtube-analyzer.io',
-    isEnabled: true,
+    isEnabled: false,
     iconName: 'video',
   },
   {
@@ -53,7 +53,7 @@ const INITIAL_MCP_SERVERS: McpServer[] = [
     category: 'Cloud Storage',
     description: 'Parse Google Docs, Sheets, Slides, PDF attachments, and shared workspace folders.',
     endpoint: 'https://mcp.workspace.google.com',
-    isEnabled: true,
+    isEnabled: false,
     iconName: 'file',
   },
   {
@@ -62,7 +62,7 @@ const INITIAL_MCP_SERVERS: McpServer[] = [
     category: 'Web Scraping & Index',
     description: 'Real-time live web indexing, news feeds, article extraction, and site crawling.',
     endpoint: 'https://api.search.brave.com/mcp',
-    isEnabled: true,
+    isEnabled: false,
     iconName: 'search',
   },
   {
@@ -71,7 +71,7 @@ const INITIAL_MCP_SERVERS: McpServer[] = [
     category: 'Databases & Relational',
     description: 'Analyze PostgreSQL/SQLite schema DDL, ERD entity relationships, and table foreign keys.',
     endpoint: 'https://mcp.sql-inspector.internal',
-    isEnabled: true,
+    isEnabled: false,
     iconName: 'database',
   },
   {
@@ -80,7 +80,7 @@ const INITIAL_MCP_SERVERS: McpServer[] = [
     category: 'Design Systems',
     description: 'Extract component hierarchies, design tokens, color variables, and frame specs.',
     endpoint: 'https://mcp.figma.com/v1',
-    isEnabled: true,
+    isEnabled: false,
     iconName: 'figma',
   },
   {
@@ -89,7 +89,7 @@ const INITIAL_MCP_SERVERS: McpServer[] = [
     category: 'Team Communication',
     description: 'Index channel discussions, decision logs, and engineering incident post-mortems.',
     endpoint: 'https://mcp.chat-bridge.org',
-    isEnabled: true,
+    isEnabled: false,
     iconName: 'message',
   },
   {
@@ -98,7 +98,7 @@ const INITIAL_MCP_SERVERS: McpServer[] = [
     category: 'Zettelkasten Vault',
     description: 'Import Obsidian markdown frontmatter, tags, [[wikilinks]], and graph properties.',
     endpoint: 'https://mcp.obsidian-bridge.io',
-    isEnabled: true,
+    isEnabled: false,
     iconName: 'file-code',
   },
 ];

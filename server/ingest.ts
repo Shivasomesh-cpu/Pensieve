@@ -36,9 +36,13 @@ function extractJsonObject(rawContent: string): IngestClusterResult | null {
   const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
   if (!jsonMatch) return null;
 
-  const parsed = JSON.parse(jsonMatch[0]);
-  if (parsed.mainNote && Array.isArray(parsed.connectedNotes)) {
-    return parsed as IngestClusterResult;
+  try {
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (parsed.mainNote && Array.isArray(parsed.connectedNotes)) {
+      return parsed as IngestClusterResult;
+    }
+  } catch (err) {
+    console.warn('JSON parse failed for AI output:', err);
   }
 
   return null;
@@ -52,12 +56,15 @@ export async function callOpenRouterAI(
   openRouterApiKey: string,
   modelName: string = 'nvidia/llama-3.1-nemotron-70b-instruct'
 ): Promise<IngestClusterResult | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 18000);
+
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openRouterApiKey.trim()}`,
-        'HTTP-Referer': 'https://ais-dev-pensieve.run.app',
+        'HTTP-Referer': 'https://pensieve-sigma-three.vercel.app',
         'X-Title': 'Pensieve Knowledge Graph',
         'Content-Type': 'application/json',
       },
@@ -71,7 +78,7 @@ Respond STRICTLY with raw valid JSON matching this schema:
 {
   "mainNote": {
     "title": "Master Note Title",
-    "content": "Markdown containing [[Sub Concept 1]], [[Sub Concept 2]], [[Sub Concept 3]], [[Sub Concept 4]]...",
+    "content": "Markdown containing [[Sub Concept 1]], [[Sub Concept 2]], [[Sub Concept 3]]...",
     "tags": ["tag1", "tag2"]
   },
   "connectedNotes": [
@@ -85,11 +92,13 @@ Respond STRICTLY with raw valid JSON matching this schema:
           },
           {
             role: 'user',
-            content: prompt,
+            content: prompt.substring(0, 4000),
           },
         ],
         temperature: 0.3,
+        max_tokens: 1500,
       }),
+      signal: controller.signal,
     });
 
     if (!response.ok) {
@@ -114,6 +123,8 @@ Respond STRICTLY with raw valid JSON matching this schema:
       throw err;
     }
     console.error('OpenRouter Nemotron call failed:', err);
+  } finally {
+    clearTimeout(timeout);
   }
   return null;
 }
@@ -125,24 +136,33 @@ export async function cloneAndExtractRepo(repoUrl: string): Promise<{ sourceName
   const cleanUrl = repoUrl.trim();
   const githubMatch = cleanUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/i);
   const repoName = githubMatch ? `${githubMatch[1]}-${githubMatch[2].replace(/\.git$/, '')}` : `repo-${Date.now()}`;
+  
+  // On Vercel / serverless environment, use GitHub REST API directly for maximum speed and zero timeout lag
+  const isServerless = Boolean(process.env.VERCEL) || process.env.NODE_ENV === 'production';
+  if (isServerless && githubMatch) {
+    const githubApiResult = await extractGitHubRepoViaApi(githubMatch[1], githubMatch[2].replace(/\.git$/, ''), cleanUrl);
+    if (githubApiResult) {
+      return githubApiResult;
+    }
+  }
+
   const tmpDir = path.join(os.tmpdir(), `pensieve-git-${repoName}-${Date.now()}`);
 
   try {
     console.log(`Executing terminal git clone: git clone --depth 1 ${cleanUrl} ${tmpDir}`);
-    execSync(`git clone --depth 1 "${cleanUrl}" "${tmpDir}"`, { timeout: 20000, stdio: 'ignore' });
+    execSync(`git clone --depth 1 "${cleanUrl}" "${tmpDir}"`, { timeout: 10000, stdio: 'ignore' });
 
     let readmeContent = '';
     let packageContent = '';
     let fileTreeList: string[] = [];
 
-    // Read top level files
     if (fs.existsSync(tmpDir)) {
       const files = fs.readdirSync(tmpDir);
       fileTreeList = files.slice(0, 50);
 
       const readmeFile = files.find(f => /^readme/i.test(f));
       if (readmeFile) {
-        readmeContent = fs.readFileSync(path.join(tmpDir, readmeFile), 'utf-8').substring(0, 10000);
+        readmeContent = fs.readFileSync(path.join(tmpDir, readmeFile), 'utf-8').substring(0, 5000);
       }
 
       if (fs.existsSync(path.join(tmpDir, 'package.json'))) {
@@ -150,7 +170,6 @@ export async function cloneAndExtractRepo(repoUrl: string): Promise<{ sourceName
       }
     }
 
-    // Clean up tmp folder
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     } catch (e) {}
@@ -162,7 +181,7 @@ Project Directory File Tree:
 ${fileTreeList.join(', ')}
 
 Package Manifest (Dependencies & Scripts):
-${packageContent.substring(0, 2000)}
+${packageContent.substring(0, 1500)}
 
 README & Documentation:
 ${readmeContent || 'No README found in cloned repository.'}
@@ -206,20 +225,18 @@ async function extractGitHubRepoViaApi(
     if (readmeRes.ok) {
       const readmeData: any = await readmeRes.json();
       if (readmeData.content) {
-        readmeContent = Buffer.from(readmeData.content, 'base64').toString('utf-8').substring(0, 10000);
+        readmeContent = Buffer.from(readmeData.content, 'base64').toString('utf-8').substring(0, 5000);
       }
     }
 
     const textContent = `
-GIT REPOSITORY ANALYZED via GITHUB REST API FALLBACK
+GIT REPOSITORY ANALYZED via GITHUB REST API
 URL: ${originalUrl}
 Repository: ${repoData.full_name || `${owner}/${repo}`}
 Description: ${repoData.description || 'No description available.'}
 Primary Language: ${repoData.language || 'Unknown'}
 Stars: ${repoData.stargazers_count ?? 'Unknown'}
 Forks: ${repoData.forks_count ?? 'Unknown'}
-Default Branch: ${repoData.default_branch || 'Unknown'}
-Topics: ${Array.isArray(repoData.topics) ? repoData.topics.join(', ') : 'None'}
 
 README & Documentation:
 ${readmeContent || 'No README available through GitHub REST API.'}
@@ -237,7 +254,7 @@ ${readmeContent || 'No README available through GitHub REST API.'}
 
 async function postJsonRpc(endpoint: string, method: string, params?: unknown): Promise<any> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 7000);
+  const timeout = setTimeout(() => controller.abort(), 1000);
 
   try {
     const response = await fetch(endpoint, {
@@ -269,8 +286,8 @@ async function postJsonRpc(endpoint: string, method: string, params?: unknown): 
 
 function compactMcpPayload(payload: unknown): string {
   if (payload == null) return '';
-  if (typeof payload === 'string') return payload.substring(0, 2500);
-  return JSON.stringify(payload).substring(0, 2500);
+  if (typeof payload === 'string') return payload.substring(0, 1000);
+  return JSON.stringify(payload).substring(0, 1000);
 }
 
 async function safePostJsonRpc(endpoint: string, method: string, params?: unknown): Promise<any | null> {
@@ -286,38 +303,29 @@ export async function resolveMcpContext(
   fallbackContext = ''
 ): Promise<string> {
   const enabledServers = (servers || [])
-    .filter(server => server?.endpoint && server.isEnabled !== false)
-    .slice(0, 5);
+    .filter(server => server?.endpoint && server.isEnabled !== false && (server.endpoint.startsWith('http://') || server.endpoint.startsWith('https://')))
+    .slice(0, 3);
 
   if (enabledServers.length === 0) {
     return fallbackContext;
   }
 
-  const contextBlocks = await Promise.all(enabledServers.map(async server => {
+  const resolveAllPromise = Promise.all(enabledServers.map(async server => {
     const header = `${server.name}${server.category ? ` (${server.category})` : ''}: ${server.endpoint}`;
     const toolsList = await safePostJsonRpc(server.endpoint, 'tools/list');
-    const resourcesList = await safePostJsonRpc(server.endpoint, 'resources/list');
-    const resources = resourcesList?.result?.resources || resourcesList?.resources || [];
-    const firstResourceUri = Array.isArray(resources) && resources[0]?.uri ? resources[0].uri : null;
-    const resourceRead = firstResourceUri
-      ? await safePostJsonRpc(server.endpoint, 'resources/read', { uri: firstResourceUri })
-      : null;
-    const tools = toolsList?.result?.tools || toolsList?.tools || [];
-    const firstToolName = Array.isArray(tools) && tools[0]?.name ? tools[0].name : null;
-    const toolCall = firstToolName
-      ? await safePostJsonRpc(server.endpoint, 'tools/call', { name: firstToolName, arguments: {} })
-      : null;
+    if (!toolsList || toolsList.error) return '';
 
     return [
       `MCP Server: ${header}`,
       `tools/list: ${compactMcpPayload(toolsList?.result || toolsList)}`,
-      `resources/list: ${compactMcpPayload(resourcesList?.result || resourcesList)}`,
-      resourceRead ? `resources/read: ${compactMcpPayload(resourceRead?.result || resourceRead)}` : '',
-      toolCall ? `tools/call: ${compactMcpPayload(toolCall?.result || toolCall)}` : '',
     ].filter(Boolean).join('\n');
   }));
 
-  return [fallbackContext, ...contextBlocks].filter(Boolean).join('\n\n').substring(0, 12000);
+  const raceTimeoutPromise = new Promise<string[]>(resolve => setTimeout(() => resolve([]), 1200));
+
+  const contextBlocks = await Promise.race([resolveAllPromise, raceTimeoutPromise]);
+
+  return [fallbackContext, ...contextBlocks].filter(Boolean).join('\n\n').substring(0, 6000);
 }
 
 // -------------------------------------------------------------------
@@ -334,7 +342,6 @@ export async function extractUrlContent(url: string): Promise<{ sourceName: stri
 }
 
 async function extractUrlContentFallback(cleanUrl: string): Promise<{ sourceName: string; textContent: string }> {
-  // YouTube
   if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
     try {
       const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(cleanUrl)}&format=json`);
@@ -353,60 +360,67 @@ Detailed topic breakdown and lecture summary from YouTube channel ${videoData.au
         };
       }
     } catch (err) {
-      console.warn('YouTube fetch error:', err);
+      console.warn('YouTube oEmbed extraction failed:', err);
     }
   }
 
-  // Generic Web Page
+  // Generic website / Wikipedia
   try {
-    const response = await fetch(cleanUrl, {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(cleanUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Pensieve/1.0' },
+      signal: controller.signal,
     });
-    if (response.ok) {
-      const html = await response.text();
-      const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
-      const title = titleMatch ? titleMatch[1].trim() : cleanUrl;
+    clearTimeout(timeout);
 
-      const strippedText = html
+    if (res.ok) {
+      const html = await res.text();
+      const cleanText = html
         .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
         .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
         .replace(/<[^>]+>/g, ' ')
         .replace(/\s+/g, ' ')
-        .trim();
+        .substring(0, 5000);
+
+      const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+      const pageTitle = titleMatch ? titleMatch[1] : 'Web Document';
 
       return {
-        sourceName: title,
-        textContent: `Source URL: ${cleanUrl}\nPage Title: ${title}\n\nContent:\n${strippedText.substring(0, 15000)}`,
+        sourceName: `Decoded Link: ${pageTitle.trim()}`,
+        textContent: cleanText,
       };
     }
   } catch (err) {
-    console.warn('URL direct fetch error:', err);
+    console.warn('Direct web page fetch failed:', err);
   }
 
   return {
-    sourceName: `Decoded Link: ${cleanUrl}`,
-    textContent: `Source URL: ${cleanUrl}\n\nIngested link content from URL ${cleanUrl}.`,
+    sourceName: `Link Note: ${cleanUrl}`,
+    textContent: `Ingested content from link ${cleanUrl}. Detailed research note on topic and core principles.`,
   };
 }
 
 // -------------------------------------------------------------------
-// DECODE CONTENT WITH OPENROUTER / GEMINI
+// MAIN INGESTION DISPATCHER
 // -------------------------------------------------------------------
 export async function decodeContentWithAI(
   sourceTitle: string,
   rawText: string,
   openRouterKey?: string,
   modelName: string = 'nvidia/llama-3.1-nemotron-70b-instruct',
-  mcpContext?: string,
+  mcpContext = '',
   fileBase64?: string,
   mimeType?: string
 ): Promise<IngestClusterResult> {
   const prompt = `
-Analyze and decode the source titled "${sourceTitle}".
-${mcpContext ? `Active MCP Tool Servers Context:\n${mcpContext}\n` : ''}
+SOURCE ITEM TO DECODE INTO ZETTELKASTEN KNOWLEDGE NODES:
+Source Title: ${sourceTitle}
 
-Raw Content / Data:
-${rawText.substring(0, 18000)}
+RAW CONTENT / EXTRACTED TEXT:
+${rawText}
+
+${mcpContext ? `MODEL CONTEXT PROTOCOL (MCP) ENRICHMENT:\n${mcpContext}` : ''}
 
 TASK:
 Create a master note ("mainNote") with 4 to 6 explicit [[Wikilink Sub-Concepts]] embedded inside.
@@ -463,7 +477,7 @@ Respond strictly in JSON format matching:
     }
   }
 
-  // 3. Robust Heuristic Fallback
+  // 3. Robust Heuristic Fallback (Instant zero-delay response!)
   return generateFallbackCluster(sourceTitle, rawText);
 }
 
