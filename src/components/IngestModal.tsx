@@ -88,7 +88,15 @@ export const IngestModal: React.FC<IngestModalProps> = ({
       });
 
       setProgressStep(`2/3 AI (${openRouterApiKey ? 'Nemotron' : 'Gemini'}) mapping concept clusters & Wikilinks...`);
-      const data = await res.json();
+      
+      let data: any = {};
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(res.ok ? 'Server returned an invalid non-JSON response.' : `Server Error (${res.status}): ${text.substring(0, 120)}`);
+      }
 
       if (!res.ok) {
         throw new Error(data.error || 'Failed to decode link');
@@ -148,7 +156,14 @@ export const IngestModal: React.FC<IngestModalProps> = ({
           }),
         });
 
-        const data = await res.json();
+        let data: any = {};
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          data = await res.json();
+        } else {
+          const text = await res.text();
+          throw new Error(res.ok ? 'Server returned an invalid non-JSON response.' : `Server Error (${res.status}): ${text.substring(0, 120)}`);
+        }
 
         if (!res.ok) {
           throw new Error(data.error || 'Failed to decode file');

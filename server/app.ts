@@ -7,6 +7,14 @@ const app = express();
 
 app.use(express.json({ limit: '25mb' }));
 
+// Middleware to normalize URL paths for Vercel serverless functions
+app.use((req, res, next) => {
+  if (req.url && !req.url.startsWith('/api')) {
+    req.url = '/api' + (req.url.startsWith('/') ? '' : '/') + req.url;
+  }
+  next();
+});
+
 // Middleware to ensure Database is initialized
 app.use(async (req, res, next) => {
   try {
