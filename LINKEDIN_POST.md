@@ -1,51 +1,50 @@
-# 🚀 Pensieve — Official LinkedIn Launch Package
+# 🚀 Pensieve — Viral LinkedIn Launch Package
 
-Use this ready-to-publish package to launch **Pensieve** on LinkedIn.
+Use this high-converting, attention-grabbing post package to launch **Pensieve** on LinkedIn.
 
 ---
 
 ## 📌 STEP 1: Copy & Paste the LinkedIn Post Text
 
 ```text
-🚀 Excited to launch Pensieve — an AI-Powered Zettelkasten Knowledge Graph & Research Assistant! 🧠✨
+🤯 Stop taking passive notes. Start building an AI-Powered Knowledge Graph & MCP Context Engine.
 
-Most note-taking apps force your thoughts into static folders. But true research and deep work aren’t linear—they’re an interconnected web of concepts, insights, and questions.
+Most tools treat notes like static text files. But real research, deep engineering, and complex problem-solving require a live, interconnected brain.
 
-That’s why I built Pensieve: an open-source, ultra-modern Personal Knowledge Management (PKM) workspace inspired by Obsidian, Roam Research, and Mem.ai. 
+That’s why I built Pensieve — not a note-taking app, but a next-generation AI Research Workbench & MCP Context Engine. 🧠⚡
 
-Here is what makes Pensieve unique:
+Instead of filing documents away to die, Pensieve transforms web links, YouTube lectures, ArXiv papers, and GitHub repositories into a dynamic Zettelkasten knowledge web using AI and Model Context Protocol (MCP).
 
-🕸️ Interactive 2D Physics Knowledge Graph
-Visualizes all your [[Wikilinks]] on a real-time force-directed canvas. Nodes scale dynamically based on link density, and automatically surface placeholder Ghost Nodes for concepts you haven't written yet.
+Here is what makes Pensieve a game-changer:
 
-🤖 AI Research Copilot (Powered by OpenRouter)
-Integrated with Llama 3.3 70B Instruct. It acts as your research co-thinker—answering grounded questions on your notes, generating smart tags, and automatically splitting verbose essays into modular, linked Zettel notes.
+🌐 1. Web Link & GitHub Repository Decoder
+Paste any GitHub repo (github.com/user/repo), YouTube link, or PDF. Pensieve executes terminal-level git cloning and API scraping to instantly extract file trees, code manifests, and READMEs—transforming raw repositories into connected Zettel nodes.
 
-⚡ Web Link & GitHub Repository Decoder
-Paste any web URL, YouTube video, or GitHub repo (github.com/user/repo). Pensieve automatically clones and parses file trees and READMEs into an interconnected Zettelkasten collection in seconds.
+🔌 2. Native Model Context Protocol (MCP) Engine
+Pensieve integrates directly with 10+ Model Context Protocol (MCP) servers—including GitHub, ArXiv, Wikipedia, YouTube Transcripts, Google Drive, SQL Schemas, and Brave Search—injecting real-time context directly into OpenRouter AI completions.
 
-🔌 Model Context Protocol (MCP) Server Hub
-Connect your knowledge graph directly to external developer tools, academic papers (ArXiv), encyclopedic data (Wikipedia), YouTube transcripts, and Brave Search.
+🕸️ 3. Interactive 2D Physics Knowledge Graph
+Visualizes your entire research space on a real-time force-directed canvas. Nodes scale dynamically based on link density, surfacing placeholder Ghost Nodes for unwritten references waiting to be explored.
 
-📝 Zettelkasten Markdown Editor & Live Preview
-Dual-mode typography editor featuring mathematical LaTeX formula rendering, code block syntax highlighting, reading time analytics, and bi-directional backlinks inspection.
+🤖 4. AI Research Copilot & Zettel Atomic Splitter
+Powered by Llama 3.3 70B Instruct via OpenRouter. Ask grounded questions directly over your notes, extract smart tags, or automatically split long dense essays into modular, bi-directionally linked Zettel concepts.
 
-🔥 Daily Journal & Streak Habit Heatmap
-Stay consistent with daily journaling, word count goals, and an activity heatmap to track your research momentum over time.
+📊 5. Daily Research Habit & Streak Tracker
+Track your research momentum with daily word count targets, writing heatmaps, and streak logs.
 
 ---
 
 💻 Tech Stack:
-• Frontend: React 18, Vite 6, TailwindCSS, Motion, D3 Canvas Physics
+• Frontend: React 18, Vite 6, TailwindCSS, D3 Canvas Physics
 • Backend: Express.js running on Vercel Serverless Functions (@vercel/node)
 • Database: WebAssembly SQLite (sql.js)
-• AI Engine: OpenRouter API + Model Context Protocol (MCP)
+• AI & Context: OpenRouter API + Model Context Protocol (MCP) Hub
 
 Check out the live demo and GitHub repo in the first comment! 👇
 
-Would love to hear your feedback, thoughts, and ideas! 🙌
+What's your biggest bottleneck when doing technical research? Let’s connect in the comments! 🙌
 
-#OpenSource #AI #BuildInPublic #ReactJS #TypeScript #WebDevelopment #Productivity #Zettelkasten #Obsidian #MachineLearning #OpenRouter
+#AI #BuildInPublic #OpenSource #MachineLearning #ModelContextProtocol #TypeScript #ReactJS #WebDevelopment #Productivity #GitHub #OpenRouter
 ```
 
 ---
@@ -53,10 +52,10 @@ Would love to hear your feedback, thoughts, and ideas! 🙌
 ## 📌 STEP 2: Add this First Comment (Boosts Algorithm Reach)
 
 ```text
-🔗 Try the Live Demo: https://pensieve-sigma-three.vercel.app/
+🌐 Live Interactive Demo: https://pensieve-sigma-three.vercel.app/
 ⭐️ Star on GitHub: https://github.com/Shivasomesh-cpu/Pensieve
 
-Pro-tip: For best AI link decoding results in the live app, enter your OpenRouter key and select Llama 3.3 70B Instruct in the dropdown!
+💡 Quick Tip: For maximum output quality and structured link decoding in the live app, enter your OpenRouter key and select Llama 3.3 70B Instruct in the model selector!
 ```
 
 ---
