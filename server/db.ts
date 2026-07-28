@@ -2,10 +2,7 @@ import initSqlJs, { Database } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-const SQL_WASM_PATH = require.resolve('sql.js/dist/sql-wasm.wasm');
+const SQL_WASM_PATH = path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
 
 let dbInstance: Database | null = null;
 
