@@ -2,6 +2,10 @@ import initSqlJs, { Database } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const SQL_WASM_PATH = require.resolve('sql.js/dist/sql-wasm.wasm');
 
 let dbInstance: Database | null = null;
 
@@ -15,7 +19,7 @@ export async function getDb(): Promise<Database> {
   if (dbInstance) return dbInstance;
   
   const DB_FILE = getDbFilePath();
-  const SQL = await initSqlJs();
+  const SQL = await initSqlJs({ locateFile: () => SQL_WASM_PATH });
   if (fs.existsSync(DB_FILE)) {
     const fileBuffer = fs.readFileSync(DB_FILE);
     dbInstance = new SQL.Database(fileBuffer);
