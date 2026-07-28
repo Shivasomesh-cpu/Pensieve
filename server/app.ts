@@ -9,6 +9,10 @@ app.use(express.json({ limit: '25mb' }));
 
 // Middleware to normalize URL paths for Vercel serverless functions
 app.use((req, res, next) => {
+  const original = (req.headers['x-matched-path'] as string) || (req.headers['x-now-route-matches'] as string) || req.url;
+  if (original && original !== '/api' && original !== '/') {
+    req.url = original;
+  }
   if (req.url && !req.url.startsWith('/api')) {
     req.url = '/api' + (req.url.startsWith('/') ? '' : '/') + req.url;
   }
@@ -26,8 +30,7 @@ app.use(async (req, res, next) => {
 });
 
 // Helper to insert and save an ingested cluster of notes
-function saveIngestedCluster(cluster: { mainNote: any; connectedNotes: any[] }) {
-  const db = getDbSync();
+function saveIngestedCluster(cluster: { mainNote: any; connectedNotes: any[] }, db: any) {
   const now = new Date().toISOString();
   const createdNoteIds: string[] = [];
 
@@ -93,15 +96,6 @@ function saveIngestedCluster(cluster: { mainNote: any; connectedNotes: any[] }) 
   };
 }
 
-// Helper to get db instance after middleware initialization
-function getDbSync() {
-  const dbPromise = getDb();
-  // Since middleware initialized getDb(), getDb() returns existing dbInstance synchronously
-  let syncDb: any = null;
-  dbPromise.then(d => { syncDb = d; });
-  return syncDb;
-}
-
 // Helper to extract tags from array or string
 function parseTagsInput(tagsInput: any): string[] {
   if (!tagsInput) return [];
@@ -115,16 +109,16 @@ function parseTagsInput(tagsInput: any): string[] {
 }
 
 // ------------------------------------------------------------------
-// API ROUTES
+// API ROUTES (with dual path matching for /api/* and /*)
 // ------------------------------------------------------------------
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
 // GET /api/notes - Filter & Search
-app.get('/api/notes', async (req, res) => {
+app.get(['/api/notes', '/notes'], async (req, res) => {
   try {
     const db = await getDb();
     const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
@@ -197,8 +191,32 @@ app.get('/api/notes', async (req, res) => {
   }
 });
 
-// GET /api/notes/:id
-app.get('/api/notes/:id', async (req, res) => {
+// GET /api/notes/by-title/:title - Lookup by title
+app.get(['/api/notes/by-title/:title', '/notes/by-title/:title'], async (req, res) => {
+  try {
+    const db = await getDb();
+    const title = decodeURIComponent(req.params.title).trim();
+    const note = queryOne(db, `SELECT * FROM notes WHERE LOWER(title) = LOWER(?)`, [title]);
+    if (!note) {
+      return res.status(404).json({ error: 'Note not found' });
+    }
+
+    const tagRows = queryAll<{ tag: string }>(db, `SELECT tag FROM tags WHERE note_id = ?`, [note.id]);
+    res.json({
+      ...note,
+      is_ghost: Boolean(note.is_ghost),
+      is_pinned: Boolean(note.is_pinned),
+      is_archived: Boolean(note.is_archived),
+      is_public: Boolean(note.is_public),
+      tags: tagRows.map(tr => tr.tag)
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to fetch note by title' });
+  }
+});
+
+// GET /api/notes/:id - Fetch by ID
+app.get(['/api/notes/:id', '/notes/:id'], async (req, res) => {
   try {
     const db = await getDb();
     const note = queryOne(db, `SELECT * FROM notes WHERE id = ?`, [req.params.id]);
@@ -221,7 +239,7 @@ app.get('/api/notes/:id', async (req, res) => {
 });
 
 // POST /api/notes - Create note
-app.post('/api/notes', async (req, res) => {
+app.post(['/api/notes', '/notes'], async (req, res) => {
   try {
     const db = await getDb();
     const { title, content = '', type = 'note', tags = [] } = req.body;
@@ -268,7 +286,7 @@ app.post('/api/notes', async (req, res) => {
 });
 
 // PUT /api/notes/:id - Update note & handle title renames
-app.put('/api/notes/:id', async (req, res) => {
+app.put(['/api/notes/:id', '/notes/:id'], async (req, res) => {
   try {
     const db = await getDb();
     const noteId = req.params.id;
@@ -336,7 +354,7 @@ app.put('/api/notes/:id', async (req, res) => {
 });
 
 // DELETE /api/notes/:id - Safe deletion
-app.delete('/api/notes/:id', async (req, res) => {
+app.delete(['/api/notes/:id', '/notes/:id'], async (req, res) => {
   try {
     const db = await getDb();
     const noteId = req.params.id;
@@ -376,7 +394,7 @@ app.delete('/api/notes/:id', async (req, res) => {
 });
 
 // GET /api/notes/:id/backlinks
-app.get('/api/notes/:id/backlinks', async (req, res) => {
+app.get(['/api/notes/:id/backlinks', '/notes/:id/backlinks'], async (req, res) => {
   try {
     const db = await getDb();
     const noteId = req.params.id;
@@ -437,7 +455,7 @@ app.get('/api/notes/:id/backlinks', async (req, res) => {
 });
 
 // GET /api/graph
-app.get('/api/graph', async (req, res) => {
+app.get(['/api/graph', '/graph'], async (req, res) => {
   try {
     const db = await getDb();
     const allNotes = queryAll<any>(db, `SELECT id, title, type, is_ghost FROM notes WHERE is_archived = 0`);
@@ -467,7 +485,7 @@ app.get('/api/graph', async (req, res) => {
 });
 
 // GET /api/tags
-app.get('/api/tags', async (req, res) => {
+app.get(['/api/tags', '/tags'], async (req, res) => {
   try {
     const db = await getDb();
     const rows = queryAll<{ tag: string; count: number }>(
@@ -480,8 +498,8 @@ app.get('/api/tags', async (req, res) => {
   }
 });
 
-// GET /api/journal/today
-app.get('/api/journal/today', async (req, res) => {
+// GET & POST /api/journal/today - Today's Journal Entry
+app.all(['/api/journal/today', '/journal/today'], async (req, res) => {
   try {
     const db = await getDb();
     const todayStr = new Date().toISOString().split('T')[0];
@@ -523,7 +541,7 @@ app.get('/api/journal/today', async (req, res) => {
 });
 
 // GET /api/journal/streak
-app.get('/api/journal/streak', async (req, res) => {
+app.get(['/api/journal/streak', '/journal/streak'], async (req, res) => {
   try {
     const db = await getDb();
     const rows = queryAll<{ date_str: string }>(
@@ -567,8 +585,8 @@ app.get('/api/journal/streak', async (req, res) => {
   }
 });
 
-// POST /api/notes/:id/share
-app.post('/api/notes/:id/share', async (req, res) => {
+// POST /api/notes/:id/share - Generate public share link
+app.post(['/api/notes/:id/share', '/notes/:id/share'], async (req, res) => {
   try {
     const db = await getDb();
     const noteId = req.params.id;
@@ -594,8 +612,8 @@ app.post('/api/notes/:id/share', async (req, res) => {
   }
 });
 
-// DELETE /api/notes/:id/share
-app.delete('/api/notes/:id/share', async (req, res) => {
+// DELETE /api/notes/:id/share - Revoke public share link
+app.delete(['/api/notes/:id/share', '/notes/:id/share'], async (req, res) => {
   try {
     const db = await getDb();
     const noteId = req.params.id;
@@ -606,8 +624,8 @@ app.delete('/api/notes/:id/share', async (req, res) => {
   }
 });
 
-// GET /api/share/:token
-app.get('/api/share/:token', async (req, res) => {
+// GET /api/share/:token - Public read-only note view
+app.get(['/api/share/:token', '/share/:token'], async (req, res) => {
   try {
     const db = await getDb();
     const token = req.params.token;
@@ -630,8 +648,8 @@ app.get('/api/share/:token', async (req, res) => {
   }
 });
 
-// POST /api/notes/clear-all
-app.post('/api/notes/clear-all', async (req, res) => {
+// POST /api/notes/clear-all - Wipe all notes & canvas
+app.post(['/api/notes/clear-all', '/notes/clear-all'], async (req, res) => {
   try {
     const db = await getDb();
     clearAllNotes(db);
@@ -641,9 +659,10 @@ app.post('/api/notes/clear-all', async (req, res) => {
   }
 });
 
-// POST /api/ingest/url
-app.post('/api/ingest/url', async (req, res) => {
+// POST /api/ingest/url - Fetch link/git repo & decode into interconnected knowledge cluster
+app.post(['/api/ingest/url', '/ingest/url'], async (req, res) => {
   try {
+    const db = await getDb();
     const { url, openRouterApiKey, modelName, mcpContext, mcpServers } = req.body;
     const apiKey = openRouterApiKey || (req.headers['x-openrouter-key'] as string);
     
@@ -662,7 +681,7 @@ app.post('/api/ingest/url', async (req, res) => {
       resolvedMcpContext
     );
 
-    const result = saveIngestedCluster(cluster);
+    const result = saveIngestedCluster(cluster, db);
 
     res.status(201).json({
       success: true,
@@ -680,9 +699,10 @@ app.post('/api/ingest/url', async (req, res) => {
   }
 });
 
-// POST /api/ingest/file
-app.post('/api/ingest/file', async (req, res) => {
+// POST /api/ingest/file - Decode uploaded file into interconnected knowledge cluster
+app.post(['/api/ingest/file', '/ingest/file'], async (req, res) => {
   try {
+    const db = await getDb();
     const { filename, fileData, mimeType, openRouterApiKey, modelName, mcpContext, mcpServers } = req.body;
     const apiKey = openRouterApiKey || (req.headers['x-openrouter-key'] as string);
 
@@ -714,7 +734,7 @@ app.post('/api/ingest/file', async (req, res) => {
       mimeType
     );
 
-    const result = saveIngestedCluster(cluster);
+    const result = saveIngestedCluster(cluster, db);
 
     res.status(201).json({
       success: true,
