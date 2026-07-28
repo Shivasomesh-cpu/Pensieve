@@ -1,7 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
-import { getDb, queryAll, queryOne, runQuery, saveDb, processBacklinksForNote, clearAllNotes } from './db.js';
-import { extractUrlContent, decodeContentWithAI, resolveMcpContext, OpenRouterAIError } from './ingest.js';
+import { getDb, queryAll, queryOne, runQuery, saveDb, processBacklinksForNote, clearAllNotes } from './db';
+import { extractUrlContent, decodeContentWithAI, resolveMcpContext, OpenRouterAIError } from './ingest';
 
 const app = express();
 

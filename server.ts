@@ -1,4 +1,5 @@
 import path from 'path';
+import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import app from './server/app.js';
 
@@ -27,5 +28,4 @@ async function startServer() {
   });
 }
 
-import express from 'express';
 startServer();
