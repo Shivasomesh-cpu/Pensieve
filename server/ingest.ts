@@ -208,19 +208,21 @@ async function extractGitHubRepoViaApi(
   repo: string,
   originalUrl: string
 ): Promise<{ sourceName: string; textContent: string } | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
   try {
     const headers = {
       'Accept': 'application/vnd.github+json',
       'User-Agent': 'Pensieve-Knowledge-Ingest/1.0',
     };
-    const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+    const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers, signal: controller.signal });
     if (!repoRes.ok) {
       console.warn(`GitHub REST fallback failed with status ${repoRes.status}`);
       return null;
     }
 
     const repoData: any = await repoRes.json();
-    const readmeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, { headers });
+    const readmeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, { headers, signal: controller.signal });
     let readmeContent = '';
     if (readmeRes.ok) {
       const readmeData: any = await readmeRes.json();
@@ -249,6 +251,8 @@ ${readmeContent || 'No README available through GitHub REST API.'}
   } catch (err) {
     console.warn('GitHub REST API fallback failed:', err);
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

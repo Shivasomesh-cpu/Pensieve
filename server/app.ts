@@ -664,7 +664,7 @@ app.post(['/api/ingest/url', '/ingest/url'], async (req, res) => {
   try {
     const db = await getDb();
     const { url, openRouterApiKey, modelName, mcpContext, mcpServers } = req.body;
-    const apiKey = openRouterApiKey || (req.headers['x-openrouter-key'] as string);
+    const apiKey = process.env.OPENROUTER_API_KEY || openRouterApiKey || (req.headers['x-openrouter-key'] as string);
     
     if (!url || typeof url !== 'string' || !url.trim()) {
       return res.status(400).json({ error: 'Valid URL or Git repository link is required' });
@@ -704,7 +704,7 @@ app.post(['/api/ingest/file', '/ingest/file'], async (req, res) => {
   try {
     const db = await getDb();
     const { filename, fileData, mimeType, openRouterApiKey, modelName, mcpContext, mcpServers } = req.body;
-    const apiKey = openRouterApiKey || (req.headers['x-openrouter-key'] as string);
+    const apiKey = process.env.OPENROUTER_API_KEY || openRouterApiKey || (req.headers['x-openrouter-key'] as string);
 
     if (!filename || !fileData) {
       return res.status(400).json({ error: 'Filename and fileData are required' });
