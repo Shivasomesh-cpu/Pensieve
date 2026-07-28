@@ -54,7 +54,7 @@ Pensieve is an ultra-modern, bi-directional personal knowledge management (PKM) 
 
 ---
 
-## Features and Screenshots
+## Features and UI Screenshots
 
 ### 1. Interactive 2D Canvas Knowledge Graph
 Dynamically parses all `[[Wikilinks]]` across your vault to generate a real-time, interactive physics simulation canvas. Nodes dynamically scale in size based on link connections, and automatically surface placeholder **Ghost Nodes** for references you haven't written yet.
@@ -101,11 +101,25 @@ Integrated directly with OpenRouter AI using **Llama 3.3 70B Instruct**. The AI 
 
 ---
 
-### 4. Model Context Protocol (MCP) Server Hub
+### 4. Web Link Ingestion and GitHub Repository Decoder
+Paste any website URL, YouTube link, Wikipedia article, or GitHub repository (`https://github.com/user/repo`). Pensieve executes deep content fetching—cloning Git repositories via terminal execution—to automatically parse file trees and READMEs into an interconnected Zettelkasten note collection.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/04-link-decoder-ingestion.png" alt="Web Link Ingestion and Git Decoder" width="100%" />
+</p>
+
+**Key Capabilities:**
+- Fast GitHub REST API repository extraction (~300ms).
+- Automatic website scraping and Markdown conversion.
+- Direct PDF, Markdown, and raw text document drag-and-drop import.
+
+---
+
+### 5. Model Context Protocol (MCP) Server Hub
 Connect your knowledge graph directly to external developer tools, cloud data, and external APIs using the **Model Context Protocol (MCP)**.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/04-mcp-server-hub.png" alt="Model Context Protocol MCP Hub" width="100%" />
+  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/05-mcp-server-hub.png" alt="Model Context Protocol MCP Hub" width="100%" />
 </p>
 
 **Pre-configured MCP Server Integrations:**
@@ -122,129 +136,55 @@ Connect your knowledge graph directly to external developer tools, cloud data, a
 
 ---
 
-### 5. Web Link Ingestion and GitHub Repository Decoder
-Paste any website URL, YouTube link, Wikipedia article, or GitHub repository (`https://github.com/user/repo`). Pensieve executes deep content fetching—cloning Git repositories via terminal execution—to automatically parse file trees and READMEs into an interconnected Zettelkasten note collection.
+### 6. Document & File Import Dropzone
+Drag and drop PDF documents, Markdown files, or raw text directly into the ingestion modal to automatically decode them into connected Zettel nodes.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/05-link-decoder-ingestion.png" alt="Web Link Ingestion and Git Decoder" width="100%" />
+  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/06-upload-file-dropzone.png" alt="Document Ingestion Dropzone" width="100%" />
 </p>
 
-**Key Capabilities:**
-- Terminal-level `git clone --depth 1` repository extraction.
-- Automatic website scraping and Markdown conversion.
-- Direct PDF, Markdown, and raw text document drag-and-drop import.
+---
+
+## Technical Stack
+
+- **Frontend Framework**: React 18, Vite 6, TailwindCSS 4
+- **Icons & Motion**: Lucide React, Motion (Framer)
+- **Editor Engine**: Marked.js with custom KaTeX & Prism plugins
+- **Graph Canvas**: HTML5 Canvas with custom D3 force-directed physics engine
+- **Backend API**: Express 4 running on Vercel Serverless Functions (`@vercel/node`)
+- **Database**: SQLite3 compiled to WebAssembly (`sql.js`) with `/tmp` file persistence
+- **AI Completion Engine**: OpenRouter API (`https://openrouter.ai/api/v1/chat/completions`)
 
 ---
 
-### 6. Bi-directional Backlinks and References Inspector
-Never lose context. The dedicated Backlinks Inspector indexes both explicit `[[Wikilinks]]` referencing the active note and **Unlinked Mentions** found throughout your vault.
+## Quick Start (Local Development)
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/06-bidirectional-backlinks-panel.png" alt="Bi-directional Backlinks Inspector" width="100%" />
-</p>
+```bash
+# 1. Clone the repository
+git clone https://github.com/Shivasomesh-cpu/Pensieve.git
+cd Pensieve
 
-**Key Capabilities:**
-- Explicit references list showing surrounding excerpt context.
-- Unlinked mentions auto-detector with one-click "Convert to Link" action.
-- Ghost node list displaying all dangling references across your graph.
+# 2. Install dependencies
+npm install
 
----
-
-### 7. Daily Reflection Journal and Writing Habit Tracker
-Stay consistent with built-in daily journaling. Track your active writing streak, monitor daily word count goals, and visualize your historical knowledge creation via an activity heatmap.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Shivasomesh-cpu/Pensieve/main/public/screenshots/07-journal-streak-habit-tracker.png" alt="Daily Journal and Habit Tracker" width="100%" />
-</p>
-
-**Key Capabilities:**
-- One-click creation of dated Daily Reflection Journals (`#journal`).
-- Active streak counter and total word production analytics.
-- Activity calendar heatmap tracking note updates.
-
----
-
-## Quick Start and Installation
-
-### Option 1: Local Development
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/Shivasomesh-cpu/Pensieve.git
-   cd Pensieve
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Start the local development server**:
-   ```bash
-   npm run dev
-   ```
-   Open `http://localhost:3000` in your browser.
-
----
-
-### Option 2: Deploying to Vercel
-
-Pensieve is pre-configured for **Vercel Serverless** deployment:
-
-1. Push your repository to GitHub.
-2. Go to [Vercel Dashboard](https://vercel.com/dashboard) and click **Add New** > **Project**.
-3. Import `Shivasomesh-cpu/Pensieve`.
-4. Click **Deploy**. Vercel handles the Serverless build (`vercel.json`) and static asset routing automatically.
-
----
-
-## AI Key Setup
-
-Pensieve allows zero-config key entry directly in the user interface:
-
-1. Click the **OpenRouter Key** button in the top navigation bar.
-2. Enter your OpenRouter API key (`sk-or-v1-...`).
-3. Select **`meta-llama/llama-3.3-70b-instruct`** (**Llama 3.3 70B Instruct**) from the model list.
-4. Your key is stored securely in your browser local memory and sent only via encrypted headers directly to the OpenRouter API.
-
-Optionally, you can define a default server-side key in `.env`:
-```env
-OPENROUTER_API_KEY=sk-or-v1-...
+# 3. Start local development server
+npm run dev
 ```
 
+Visit `http://localhost:3000` to interact with your local Pensieve instance.
+
 ---
 
-## Repository Directory Structure
+## Deploying to Vercel
 
-```
-Pensieve/
-├── api/
-│   └── index.ts            # Vercel Serverless function entry point
-├── public/
-│   └── screenshots/        # Feature screenshots for README
-├── server/
-│   ├── app.ts              # Express API endpoints (/api/notes, /api/graph, /api/mcp)
-│   ├── db.ts               # WebAssembly SQLite database setup & Wikilink indexer
-│   └── ingest.ts           # Git terminal cloner & OpenRouter Llama decoding logic
-├── src/
-│   ├── App.tsx             # Root layout, resizable panes, & global state
-│   ├── components/
-│   │   ├── LeftPane.tsx            # Search filters, tag manager, & note list
-│   │   ├── CenterEditor.tsx        # Markdown editor, previewer, & AI copilot
-│   │   ├── RightPane.tsx           # Resizable 2D knowledge graph & backlinks
-│   │   ├── KnowledgeGraph.tsx      # Canvas force simulation renderer
-│   │   ├── IngestModal.tsx         # Web URL & Git repository cloner modal
-│   │   ├── McpHubModal.tsx         # 10+ Model Context Protocol server hub
-│   │   ├── OpenRouterLoginModal.tsx# AI Key configuration modal
-│   │   └── ClearCanvasModal.tsx    # Wiping canvas confirmation modal
-│   └── types.ts            # TypeScript interfaces
-├── vercel.json             # Vercel serverless build rewrite config
-├── server.ts               # Local standalone Express dev server
-└── package.json            # Project dependencies & scripts
-```
+Pensieve is pre-configured for Vercel Serverless deployment out-of-the-box.
+
+1. Import `Shivasomesh-cpu/Pensieve` into your [Vercel Dashboard](https://vercel.com).
+2. Vercel automatically detects the Vite build settings and `vercel.json` routing configuration.
+3. Click **Deploy**!
 
 ---
 
 ## License
 
-This project is open-source under the **MIT License**.
+Distributed under the MIT License. See `LICENSE` for details.
