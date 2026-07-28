@@ -498,6 +498,7 @@ export default function App() {
         openRouterApiKey={openRouterApiKey}
         modelName={modelName}
         mcpContext={mcpContextString}
+        mcpServers={mcpServers}
         onOpenOpenRouterModal={() => {
           setIsIngestModalOpen(false);
           setIsOpenRouterModalOpen(true);

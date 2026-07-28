@@ -14,6 +14,35 @@ export interface IngestClusterResult {
   connectedNotes: IngestNoteResult[];
 }
 
+export interface McpServerContextSource {
+  name: string;
+  category?: string;
+  endpoint: string;
+  isEnabled?: boolean;
+}
+
+export class OpenRouterAIError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'OpenRouterAIError';
+    this.status = status;
+  }
+}
+
+function extractJsonObject(rawContent: string): IngestClusterResult | null {
+  const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+
+  const parsed = JSON.parse(jsonMatch[0]);
+  if (parsed.mainNote && Array.isArray(parsed.connectedNotes)) {
+    return parsed as IngestClusterResult;
+  }
+
+  return null;
+}
+
 // -------------------------------------------------------------------
 // OPENROUTER & NEMOTRON CALL
 // -------------------------------------------------------------------
@@ -65,20 +94,24 @@ Respond STRICTLY with raw valid JSON matching this schema:
     if (!response.ok) {
       const errText = await response.text();
       console.error('OpenRouter API Error Response:', errText);
+      if (response.status === 401) {
+        throw new OpenRouterAIError('OpenRouter rejected the API key. Please check the key and try again.', 401);
+      }
+      if (response.status === 402) {
+        throw new OpenRouterAIError('OpenRouter reported insufficient credits for this account.', 402);
+      }
       return null;
     }
 
-    const data = await response.json();
+    const responseText = await response.text();
+    const data = JSON.parse(responseText);
     const rawContent = data.choices?.[0]?.message?.content || '';
-    
-    // Clean markdown code blocks if returned
-    const jsonStr = rawContent.replace(/```json/gi, '').replace(/```/g, '').trim();
-    const parsed = JSON.parse(jsonStr);
 
-    if (parsed.mainNote && Array.isArray(parsed.connectedNotes)) {
-      return parsed as IngestClusterResult;
-    }
+    return extractJsonObject(rawContent);
   } catch (err) {
+    if (err instanceof OpenRouterAIError) {
+      throw err;
+    }
     console.error('OpenRouter Nemotron call failed:', err);
   }
   return null;
@@ -140,8 +173,150 @@ ${readmeContent || 'No README found in cloned repository.'}
     };
   } catch (err) {
     console.warn('Terminal git clone fallback to GitHub REST API:', err);
+    if (githubMatch) {
+      const githubApiResult = await extractGitHubRepoViaApi(githubMatch[1], githubMatch[2].replace(/\.git$/, ''), cleanUrl);
+      if (githubApiResult) {
+        return githubApiResult;
+      }
+    }
     return extractUrlContentFallback(cleanUrl);
   }
+}
+
+async function extractGitHubRepoViaApi(
+  owner: string,
+  repo: string,
+  originalUrl: string
+): Promise<{ sourceName: string; textContent: string } | null> {
+  try {
+    const headers = {
+      'Accept': 'application/vnd.github+json',
+      'User-Agent': 'Pensieve-Knowledge-Ingest/1.0',
+    };
+    const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+    if (!repoRes.ok) {
+      console.warn(`GitHub REST fallback failed with status ${repoRes.status}`);
+      return null;
+    }
+
+    const repoData: any = await repoRes.json();
+    const readmeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, { headers });
+    let readmeContent = '';
+    if (readmeRes.ok) {
+      const readmeData: any = await readmeRes.json();
+      if (readmeData.content) {
+        readmeContent = Buffer.from(readmeData.content, 'base64').toString('utf-8').substring(0, 10000);
+      }
+    }
+
+    const textContent = `
+GIT REPOSITORY ANALYZED via GITHUB REST API FALLBACK
+URL: ${originalUrl}
+Repository: ${repoData.full_name || `${owner}/${repo}`}
+Description: ${repoData.description || 'No description available.'}
+Primary Language: ${repoData.language || 'Unknown'}
+Stars: ${repoData.stargazers_count ?? 'Unknown'}
+Forks: ${repoData.forks_count ?? 'Unknown'}
+Default Branch: ${repoData.default_branch || 'Unknown'}
+Topics: ${Array.isArray(repoData.topics) ? repoData.topics.join(', ') : 'None'}
+
+README & Documentation:
+${readmeContent || 'No README available through GitHub REST API.'}
+    `.trim();
+
+    return {
+      sourceName: `Git Repo: ${repoData.full_name || `${owner}/${repo}`}`,
+      textContent,
+    };
+  } catch (err) {
+    console.warn('GitHub REST API fallback failed:', err);
+    return null;
+  }
+}
+
+async function postJsonRpc(endpoint: string, method: string, params?: unknown): Promise<any> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 7000);
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: `pensieve-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        method,
+        params: params ?? {},
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const text = await response.text();
+    if (!text.trim()) return null;
+    return JSON.parse(text);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function compactMcpPayload(payload: unknown): string {
+  if (payload == null) return '';
+  if (typeof payload === 'string') return payload.substring(0, 2500);
+  return JSON.stringify(payload).substring(0, 2500);
+}
+
+async function safePostJsonRpc(endpoint: string, method: string, params?: unknown): Promise<any | null> {
+  try {
+    return await postJsonRpc(endpoint, method, params);
+  } catch (err: any) {
+    return { error: err.message || 'Unknown MCP error' };
+  }
+}
+
+export async function resolveMcpContext(
+  servers: McpServerContextSource[] | undefined,
+  fallbackContext = ''
+): Promise<string> {
+  const enabledServers = (servers || [])
+    .filter(server => server?.endpoint && server.isEnabled !== false)
+    .slice(0, 5);
+
+  if (enabledServers.length === 0) {
+    return fallbackContext;
+  }
+
+  const contextBlocks = await Promise.all(enabledServers.map(async server => {
+    const header = `${server.name}${server.category ? ` (${server.category})` : ''}: ${server.endpoint}`;
+    const toolsList = await safePostJsonRpc(server.endpoint, 'tools/list');
+    const resourcesList = await safePostJsonRpc(server.endpoint, 'resources/list');
+    const resources = resourcesList?.result?.resources || resourcesList?.resources || [];
+    const firstResourceUri = Array.isArray(resources) && resources[0]?.uri ? resources[0].uri : null;
+    const resourceRead = firstResourceUri
+      ? await safePostJsonRpc(server.endpoint, 'resources/read', { uri: firstResourceUri })
+      : null;
+    const tools = toolsList?.result?.tools || toolsList?.tools || [];
+    const firstToolName = Array.isArray(tools) && tools[0]?.name ? tools[0].name : null;
+    const toolCall = firstToolName
+      ? await safePostJsonRpc(server.endpoint, 'tools/call', { name: firstToolName, arguments: {} })
+      : null;
+
+    return [
+      `MCP Server: ${header}`,
+      `tools/list: ${compactMcpPayload(toolsList?.result || toolsList)}`,
+      `resources/list: ${compactMcpPayload(resourcesList?.result || resourcesList)}`,
+      resourceRead ? `resources/read: ${compactMcpPayload(resourceRead?.result || resourceRead)}` : '',
+      toolCall ? `tools/call: ${compactMcpPayload(toolCall?.result || toolCall)}` : '',
+    ].filter(Boolean).join('\n');
+  }));
+
+  return [fallbackContext, ...contextBlocks].filter(Boolean).join('\n\n').substring(0, 12000);
 }
 
 // -------------------------------------------------------------------

@@ -8,6 +8,12 @@ interface IngestModalProps {
   openRouterApiKey: string;
   modelName: string;
   mcpContext: string;
+  mcpServers: {
+    name: string;
+    category: string;
+    endpoint: string;
+    isEnabled: boolean;
+  }[];
   onOpenOpenRouterModal: () => void;
   onOpenMcpHubModal: () => void;
 }
@@ -19,6 +25,7 @@ export const IngestModal: React.FC<IngestModalProps> = ({
   openRouterApiKey,
   modelName,
   mcpContext,
+  mcpServers,
   onOpenOpenRouterModal,
   onOpenMcpHubModal,
 }) => {
@@ -76,6 +83,7 @@ export const IngestModal: React.FC<IngestModalProps> = ({
           openRouterApiKey,
           modelName,
           mcpContext,
+          mcpServers: mcpServers.filter(server => server.isEnabled),
         }),
       });
 
@@ -136,6 +144,7 @@ export const IngestModal: React.FC<IngestModalProps> = ({
             openRouterApiKey,
             modelName,
             mcpContext,
+            mcpServers: mcpServers.filter(server => server.isEnabled),
           }),
         });
 

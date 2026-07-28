@@ -3,7 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { getDb, queryAll, queryOne, runQuery, saveDb, processBacklinksForNote, clearAllNotes } from './server/db.js';
-import { extractUrlContent, decodeContentWithAI } from './server/ingest.js';
+import { extractUrlContent, decodeContentWithAI, resolveMcpContext, OpenRouterAIError } from './server/ingest.js';
 
 async function startServer() {
   const app = express();
@@ -623,7 +623,7 @@ async function startServer() {
   // POST /api/ingest/url - Fetch link/git repo & decode into interconnected knowledge cluster
   app.post('/api/ingest/url', async (req, res) => {
     try {
-      const { url, openRouterApiKey, modelName, mcpContext } = req.body;
+      const { url, openRouterApiKey, modelName, mcpContext, mcpServers } = req.body;
       const apiKey = openRouterApiKey || (req.headers['x-openrouter-key'] as string);
       
       if (!url || typeof url !== 'string' || !url.trim()) {
@@ -632,6 +632,7 @@ async function startServer() {
 
       // Step 1: Fetch / terminal git clone and extract raw text from URL
       const { sourceName, textContent } = await extractUrlContent(url);
+      const resolvedMcpContext = await resolveMcpContext(mcpServers, mcpContext);
 
       // Step 2: Use AI (OpenRouter Nemotron / Gemini) to decode into interconnected notes cluster
       const cluster = await decodeContentWithAI(
@@ -639,7 +640,7 @@ async function startServer() {
         textContent,
         apiKey,
         modelName || 'nvidia/llama-3.1-nemotron-70b-instruct',
-        mcpContext
+        resolvedMcpContext
       );
 
       // Step 3: Save cluster into SQLite and build edges
@@ -654,6 +655,9 @@ async function startServer() {
       });
     } catch (err: any) {
       console.error('Error ingesting URL:', err);
+      if (err instanceof OpenRouterAIError) {
+        return res.status(err.status).json({ error: err.message });
+      }
       res.status(500).json({ error: err.message || 'Failed to decode link' });
     }
   });
@@ -661,7 +665,7 @@ async function startServer() {
   // POST /api/ingest/file - Decode uploaded file into interconnected knowledge cluster
   app.post('/api/ingest/file', async (req, res) => {
     try {
-      const { filename, fileData, mimeType, openRouterApiKey, modelName, mcpContext } = req.body;
+      const { filename, fileData, mimeType, openRouterApiKey, modelName, mcpContext, mcpServers } = req.body;
       const apiKey = openRouterApiKey || (req.headers['x-openrouter-key'] as string);
 
       if (!filename || !fileData) {
@@ -681,13 +685,15 @@ async function startServer() {
         textContent = fileData;
       }
 
+      const resolvedMcpContext = await resolveMcpContext(mcpServers, mcpContext);
+
       // Step 1: AI decoding (OpenRouter Nemotron / Gemini)
       const cluster = await decodeContentWithAI(
         filename,
         textContent,
         apiKey,
         modelName || 'nvidia/llama-3.1-nemotron-70b-instruct',
-        mcpContext,
+        resolvedMcpContext,
         base64Data,
         mimeType
       );
@@ -704,6 +710,9 @@ async function startServer() {
       });
     } catch (err: any) {
       console.error('Error ingesting file:', err);
+      if (err instanceof OpenRouterAIError) {
+        return res.status(err.status).json({ error: err.message });
+      }
       res.status(500).json({ error: err.message || 'Failed to decode file' });
     }
   });
