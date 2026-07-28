@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-white: #FFFFFF;
+    --color-charcoal: #242424;
+    --color-slate-blue: #5c7c89;
+    --color-teal: #1f4959;
+    --color-navy: #011425;
+  }
+
+  body {
+    background-color: #FFFFFF;
+    color: #242424;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, .font-serif-title {
+    font-family: 'Fraunces', Georgia, serif;
+    color: #011425;
+  }
+}
+
+/* Custom Scrollbars strictly using requested palette */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FFFFFF;
+}
+::-webkit-scrollbar-thumb {
+  background: #5c7c89;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #1f4959;
+}
+
+/* Markdown prose styling strictly respecting requested 5-color palette */
+.pensieve-prose {
+  color: #242424;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.7;
+}
+
+.pensieve-prose h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #011425;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 2px solid #5c7c89;
+  padding-bottom: 0.5rem;
+}
+
+.pensieve-prose h2 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #011425;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.pensieve-prose h3 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f4959;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.pensieve-prose p {
+  margin-bottom: 1rem;
+}
+
+.pensieve-prose ul, .pensieve-prose ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.pensieve-prose ul {
+  list-style-type: disc;
+}
+
+.pensieve-prose ol {
+  list-style-type: decimal;
+}
+
+.pensieve-prose li {
+  margin-bottom: 0.25rem;
+}
+
+.pensieve-prose blockquote {
+  border-left: 3px solid #1f4959;
+  padding-left: 1rem;
+  color: #5c7c89;
+  font-style: italic;
+  margin: 1rem 0;
+  background-color: #f4f7f8;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-radius: 0 4px 4px 0;
+}
+
+.pensieve-prose code {
+  background-color: #f0f4f6;
+  color: #011425;
+  padding: 0.15rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.875em;
+  border: 1px solid #5c7c89;
+}
+
+.pensieve-prose pre {
+  background-color: #011425;
+  color: #FFFFFF;
+  border: 1px solid #1f4959;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.pensieve-prose pre code {
+  background: transparent;
+  color: #FFFFFF;
+  padding: 0;
+  border: none;
+}
+
+.pensieve-prose a {
+  color: #1f4959;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+
+.pensieve-prose a:hover {
+  color: #5c7c89;
+}
+
+.pensieve-prose img, .pensieve-prose video {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  border: 1px solid #5c7c89;
+  margin: 1rem 0;
+}
+
+.pensieve-prose hr {
+  border: 0;
+  border-top: 1px solid #5c7c89;
+  margin: 1.5rem 0;
+}
+
+/* Printable Stylesheet for PDF Export */
+@media print {
+  body {
+    background-color: #FFFFFF !important;
+    color: #242424 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .pensieve-prose {
+    color: #242424 !important;
+  }
+  .pensieve-prose h1, .pensieve-prose h2, .pensieve-prose h3 {
+    color: #011425 !important;
+    border-color: #5c7c89 !important;
+  }
+  .pensieve-prose blockquote {
+    border-left-color: #1f4959 !important;
+    color: #5c7c89 !important;
+  }
+}
