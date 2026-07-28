@@ -2,6 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 interface IngestNoteResult {
   title: string;
@@ -124,7 +125,7 @@ export async function cloneAndExtractRepo(repoUrl: string): Promise<{ sourceName
   const cleanUrl = repoUrl.trim();
   const githubMatch = cleanUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/i);
   const repoName = githubMatch ? `${githubMatch[1]}-${githubMatch[2].replace(/\.git$/, '')}` : `repo-${Date.now()}`;
-  const tmpDir = path.join('/tmp', `pensieve-git-${repoName}-${Date.now()}`);
+  const tmpDir = path.join(os.tmpdir(), `pensieve-git-${repoName}-${Date.now()}`);
 
   try {
     console.log(`Executing terminal git clone: git clone --depth 1 ${cleanUrl} ${tmpDir}`);

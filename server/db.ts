@@ -1,13 +1,20 @@
 import initSqlJs, { Database } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 let dbInstance: Database | null = null;
-const DB_FILE = path.join(process.cwd(), 'pensieve.sqlite');
+
+function getDbFilePath(): string {
+  const isVercel = Boolean(process.env.VERCEL) || process.env.NODE_ENV === 'production';
+  const baseDir = isVercel ? os.tmpdir() : process.cwd();
+  return path.join(baseDir, 'pensieve.sqlite');
+}
 
 export async function getDb(): Promise<Database> {
   if (dbInstance) return dbInstance;
   
+  const DB_FILE = getDbFilePath();
   const SQL = await initSqlJs();
   if (fs.existsSync(DB_FILE)) {
     const fileBuffer = fs.readFileSync(DB_FILE);
@@ -23,9 +30,14 @@ export async function getDb(): Promise<Database> {
 
 export function saveDb(): void {
   if (!dbInstance) return;
+  const DB_FILE = getDbFilePath();
   const data = dbInstance.export();
   const buffer = Buffer.from(data);
-  fs.writeFileSync(DB_FILE, buffer);
+  try {
+    fs.writeFileSync(DB_FILE, buffer);
+  } catch (err) {
+    console.warn('Could not write database file to disk:', err);
+  }
 }
 
 function initSchema(db: Database) {
