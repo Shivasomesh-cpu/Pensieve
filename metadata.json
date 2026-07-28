@@ -1,0 +1,6 @@
+{
+  "name": "Pensieve",
+  "description": "A personal knowledge management web app for students and researchers with backlinks and interactive graph visualization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
