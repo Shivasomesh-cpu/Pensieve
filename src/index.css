@@ -9,14 +9,18 @@
     --color-navy: #011425;
   }
 
+  * {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
   body {
     background-color: #FFFFFF;
     color: #242424;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 
   h1, h2, h3, .font-serif-title {
-    font-family: 'Fraunces', Georgia, serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     color: #011425;
   }
 }
@@ -40,12 +44,12 @@
 /* Markdown prose styling strictly respecting requested 5-color palette */
 .pensieve-prose {
   color: #242424;
-  font-family: 'Inter', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   line-height: 1.7;
 }
 
 .pensieve-prose h1 {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 1.875rem;
   font-weight: 700;
   color: #011425;
@@ -56,7 +60,7 @@
 }
 
 .pensieve-prose h2 {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 1.5rem;
   font-weight: 600;
   color: #011425;
@@ -65,7 +69,7 @@
 }
 
 .pensieve-prose h3 {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 1.25rem;
   font-weight: 600;
   color: #1f4959;

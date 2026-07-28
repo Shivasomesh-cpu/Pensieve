@@ -1,10 +1,10 @@
 import path from 'path';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import app from './server/app.js';
+import app from './server/app.ts';
 
 async function startServer() {
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   // ------------------------------------------------------------------
   // VITE & STATIC SERVING
@@ -23,7 +23,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Pensieve Server running on http://0.0.0.0:${PORT}`);
   });
 }

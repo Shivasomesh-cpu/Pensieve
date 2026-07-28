@@ -480,6 +480,8 @@ export default function App() {
         onUpdateNote={handleUpdateNote}
         onDeleteNote={id => handleDeleteNote(id, false)}
         onSelectNoteByTitle={handleSelectNoteByTitle}
+        openRouterApiKey={openRouterApiKey}
+        modelName={modelName}
       />
 
       {/* Pane 3: Right Knowledge Graph & Backlinks */}

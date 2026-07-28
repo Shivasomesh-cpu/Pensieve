@@ -21,6 +21,23 @@ interface LeftPaneProps {
   isLoading: boolean;
 }
 
+function getCleanExcerpt(content: string): string {
+  if (!content) return 'Empty note description...';
+  const clean = content
+    .replace(/^#+\s+/gm, '') // Remove headers
+    .replace(/\[\[(.*?)\]\]/g, '$1') // Strip wikilink brackets
+    .replace(/\*\*(.*?)\*\*/g, '$1') // Strip bold
+    .replace(/\*(.*?)\*/g, '$1') // Strip italics
+    .replace(/^>\s+/gm, '') // Strip blockquotes
+    .replace(/```[\s\S]*?```/g, '[Code Block]') // Strip code blocks
+    .replace(/`-+/g, '')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join(' ');
+  return clean || 'Empty note description...';
+}
+
 export const LeftPane: React.FC<LeftPaneProps> = ({
   notes,
   selectedNoteId,
@@ -253,8 +270,8 @@ export const LeftPane: React.FC<LeftPaneProps> = ({
                   </div>
                 </div>
 
-                <p className="text-[11px] text-[#5c7c89] line-clamp-2 leading-relaxed mb-1.5">
-                  {note.content.replace(/^#+\s+/gm, '').replace(/\[\[(.*?)\]\]/g, '$1') || 'Empty note content...'}
+                <p className="text-[11px] text-[#5c7c89] line-clamp-2 leading-relaxed mb-1.5 font-normal">
+                  {getCleanExcerpt(note.content)}
                 </p>
 
                 <div className="flex items-center justify-between text-[10px] text-[#5c7c89]">

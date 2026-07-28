@@ -29,9 +29,11 @@ export interface NoteBacklinksResponse {
 export interface GraphNode {
   id: string;
   title: string;
-  type: 'note' | 'journal' | 'ghost';
+  type: 'note' | 'journal' | 'ghost' | 'tag';
   is_ghost: boolean;
   connectionCount: number;
+  category?: string;
+  color?: string;
   x?: number;
   y?: number;
   vx?: number;

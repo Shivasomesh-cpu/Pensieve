@@ -1,7 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import { getDb, queryAll, queryOne, runQuery, saveDb, processBacklinksForNote, clearAllNotes } from './db.ts';
-import { extractUrlContent, decodeContentWithAI, resolveMcpContext, OpenRouterAIError } from './ingest.ts';
+import { extractUrlContent, decodeContentWithAI, resolveMcpContext, OpenRouterAIError, callGeneralAICompletion } from './ingest.ts';
 
 const app = express();
 
@@ -12,14 +12,18 @@ app.get(['/api/health', '/health'], (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// Middleware to normalize URL paths for Vercel serverless functions
+// Middleware to normalize URL paths ONLY for Vercel serverless environment
 app.use((req, res, next) => {
-  const original = (req.headers['x-matched-path'] as string) || (req.headers['x-now-route-matches'] as string) || req.url;
-  if (original && original !== '/api' && original !== '/') {
-    req.url = original;
-  }
-  if (req.url && !req.url.startsWith('/api')) {
-    req.url = '/api' + (req.url.startsWith('/') ? '' : '/') + req.url;
+  const matchedPath = req.headers['x-matched-path'] as string;
+  const nowMatches = req.headers['x-now-route-matches'] as string;
+  if (matchedPath || nowMatches) {
+    const original = matchedPath || nowMatches || req.url;
+    if (original && original !== '/api' && original !== '/') {
+      req.url = original;
+    }
+    if (req.url && !req.url.startsWith('/api')) {
+      req.url = '/api' + (req.url.startsWith('/') ? '' : '/') + req.url;
+    }
   }
   next();
 });
@@ -458,26 +462,130 @@ app.get(['/api/notes/:id/backlinks', '/notes/:id/backlinks'], async (req, res) =
 app.get(['/api/graph', '/graph'], async (req, res) => {
   try {
     const db = await getDb();
-    const allNotes = queryAll<any>(db, `SELECT id, title, type, is_ghost FROM notes WHERE is_archived = 0`);
-    const allEdges = queryAll<any>(db, `SELECT source_id as source, target_id as target, target_title FROM links`);
+    const allNotes = queryAll<any>(db, `SELECT id, title, content, type, is_ghost FROM notes WHERE is_archived = 0`);
+    const explicitEdges = queryAll<any>(db, `SELECT source_id as source, target_id as target, target_title FROM links`);
+    const allTags = queryAll<{ note_id: string; tag: string }>(db, `SELECT note_id, tag FROM tags`);
 
+    const edgeMap = new Set<string>();
+    const edges: { source: string; target: string; target_title: string }[] = [];
+
+    const addEdge = (source: string, target: string, title: string) => {
+      if (source === target) return;
+      const key = [source, target].sort().join(':::');
+      if (!edgeMap.has(key)) {
+        edgeMap.add(key);
+        edges.push({ source, target, target_title: title });
+      }
+    };
+
+    // 1. Explicit wikilinks
+    explicitEdges.forEach(e => addEdge(e.source, e.target, e.target_title || ''));
+
+    // 2. Implicit title mentions in content
+    const noteMap = new Map<string, any>(allNotes.map(n => [n.id, n]));
+    allNotes.forEach(noteA => {
+      const titleA = (noteA.title || '').trim().toLowerCase();
+      if (!titleA || titleA.length < 3) return;
+
+      allNotes.forEach(noteB => {
+        if (noteA.id === noteB.id) return;
+        const contentB = (noteB.content || '').toLowerCase();
+        if (contentB.includes(titleA)) {
+          addEdge(noteB.id, noteA.id, noteA.title);
+        }
+      });
+    });
+
+    // 3. Tag Hubs & Tag-based connections
+    const tagToNotes = new Map<string, string[]>();
+    const noteToTags = new Map<string, string[]>();
+
+    allTags.forEach(t => {
+      const normalizedTag = (t.tag || '').trim().toLowerCase();
+      if (!normalizedTag) return;
+
+      if (!tagToNotes.has(normalizedTag)) tagToNotes.set(normalizedTag, []);
+      tagToNotes.get(normalizedTag)!.push(t.note_id);
+
+      if (!noteToTags.has(t.note_id)) noteToTags.set(t.note_id, []);
+      noteToTags.get(t.note_id)!.push(normalizedTag);
+    });
+
+    // Create Tag Hub Nodes for tags with 2+ notes to weave the graph together
+    const tagHubNodes: any[] = [];
+    tagToNotes.forEach((noteIds, tag) => {
+      if (noteIds.length >= 2) {
+        const tagHubId = `tag-hub-${tag}`;
+        tagHubNodes.push({
+          id: tagHubId,
+          title: `#${tag}`,
+          type: 'tag',
+          is_ghost: false,
+          category: 'Tag Hub',
+          color: '#d97706',
+        });
+
+        noteIds.forEach(nid => addEdge(nid, tagHubId, `#${tag}`));
+      }
+    });
+
+    // Calculate total connections per node
     const connectionCounts: Record<string, number> = {};
     allNotes.forEach(n => { connectionCounts[n.id] = 0; });
+    tagHubNodes.forEach(t => { connectionCounts[t.id] = 0; });
 
-    allEdges.forEach(e => {
+    edges.forEach(e => {
       if (connectionCounts[e.source] !== undefined) connectionCounts[e.source]++;
       if (connectionCounts[e.target] !== undefined) connectionCounts[e.target]++;
     });
 
-    const nodes = allNotes.map(n => ({
-      id: n.id,
-      title: n.title,
-      type: n.type,
-      is_ghost: Boolean(n.is_ghost),
-      connectionCount: connectionCounts[n.id] || 0
-    }));
+    // Assign categories and colors to note nodes
+    const nodes = allNotes.map(n => {
+      const titleLower = (n.title || '').toLowerCase();
+      const tags = noteToTags.get(n.id) || [];
+      let category = 'General Note';
+      let color = '#1f4959'; // Default Teal
 
-    res.json({ nodes, edges: allEdges });
+      if (n.is_ghost) {
+        category = 'Ghost Reference';
+        color = '#64748b'; // Slate Silver
+      } else if (n.type === 'journal' || tags.includes('journal')) {
+        category = 'Daily Journal';
+        color = '#011425'; // Dark Navy
+      } else if (titleLower.includes('ai') || titleLower.includes('nemotron') || titleLower.includes('gemini') || tags.includes('ai')) {
+        category = 'AI & Nemotron';
+        color = '#7c3aed'; // Violet Purple
+      } else if (titleLower.includes('arch') || titleLower.includes('system') || titleLower.includes('code') || titleLower.includes('git') || tags.includes('architecture')) {
+        category = 'Architecture & Systems';
+        color = '#0284c7'; // Sky Blue
+      } else if (titleLower.includes('concept') || titleLower.includes('method') || titleLower.includes('zettelkasten') || tags.includes('concept')) {
+        category = 'Concepts & Methods';
+        color = '#059669'; // Emerald Green
+      } else if (titleLower.includes('data') || titleLower.includes('setup') || titleLower.includes('config') || tags.includes('setup')) {
+        category = 'Config & Pipelines';
+        color = '#e11d48'; // Rose Crimson
+      }
+
+      return {
+        id: n.id,
+        title: n.title,
+        type: n.type,
+        is_ghost: Boolean(n.is_ghost),
+        connectionCount: connectionCounts[n.id] || 0,
+        category,
+        color,
+      };
+    });
+
+    const finalNodes = [
+      ...nodes,
+      ...tagHubNodes.map(t => ({
+        ...t,
+        connectionCount: connectionCounts[t.id] || 0,
+      }))
+    ];
+
+    res.json({ nodes: finalNodes, edges });
   } catch (err: any) {
     console.error('Error generating graph data:', err);
     res.status(500).json({ error: err.message || 'Failed to fetch graph data' });
@@ -749,6 +857,51 @@ app.post(['/api/ingest/file', '/ingest/file'], async (req, res) => {
       return res.status(err.status).json({ error: err.message });
     }
     res.status(500).json({ error: err.message || 'Failed to decode file' });
+  }
+});
+
+// POST /api/ai/enhance - Nemotron / Gemini AI copilot for note enhancement
+app.post(['/api/ai/enhance', '/ai/enhance'], async (req, res) => {
+  try {
+    const { action, title, content, userQuery, openRouterApiKey, modelName } = req.body;
+    const apiKey = openRouterApiKey || (req.headers['x-openrouter-key'] as string);
+
+    if (!title && !content && !userQuery) {
+      return res.status(400).json({ error: 'Note title or content is required' });
+    }
+
+    let systemPrompt = 'You are Nemotron AI, an expert Zettelkasten Knowledge Base assistant.';
+    let promptText = `Note Title: ${title || 'Untitled'}\n\nCurrent Content:\n${content || ''}`;
+
+    if (action === 'wikilink') {
+      systemPrompt = `You are Nemotron AI. Scan the given markdown note content and intelligently wrap 4 to 8 key concepts, technical terms, or topics with [[Wikilink]] syntax (e.g. [[Zettelkasten Method]], [[Graph Database]]). Do NOT alter formatting, code blocks, or tone. Return ONLY the complete updated markdown content.`;
+      promptText = `Intelligently add [[Wikilinks]] to this note:\n\n${content}`;
+    } else if (action === 'expand') {
+      systemPrompt = `You are Nemotron AI, a Zettelkasten research copilot. Expand the given note by writing 2 to 3 detailed, high-value technical or conceptual subsections with rich markdown, bullet points, code snippets (if applicable), and embedded [[Wikilinks]]. Return ONLY the expanded markdown text.`;
+      promptText = `Expand on this note:\nTitle: ${title}\nContent:\n${content}`;
+    } else if (action === 'summarize') {
+      systemPrompt = `You are Nemotron AI. Summarize the given note. Include:
+1. Executive Summary (2-3 sentences)
+2. 3-5 Key Takeaways with [[Wikilinks]]
+3. Suggested Tags (formatted as: Tags: #tag1, #tag2)
+Return ONLY clean markdown.`;
+      promptText = `Summarize this note:\nTitle: ${title}\nContent:\n${content}`;
+    } else if (action === 'ask') {
+      systemPrompt = `You are Nemotron AI, an intelligent research copilot for the Pensieve knowledge graph. Answer the user's specific question using the note as context. Use markdown formatting, code snippets, and embedded [[Wikilinks]] where applicable.`;
+      promptText = `Note Context:\nTitle: ${title}\nContent:\n${content}\n\nUser Question / Instructions:\n${userQuery}`;
+    }
+
+    const aiResponse = await callGeneralAICompletion(
+      promptText,
+      systemPrompt,
+      apiKey,
+      modelName || 'nvidia/llama-3.1-nemotron-70b-instruct'
+    );
+
+    res.json({ success: true, result: aiResponse });
+  } catch (err: any) {
+    console.error('AI Enhance error:', err);
+    res.status(500).json({ error: err.message || 'AI processing failed' });
   }
 });
 

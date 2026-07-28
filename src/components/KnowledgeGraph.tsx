@@ -266,43 +266,45 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
         const isHovered = node.id === hoveredNodeId;
 
         const conn = typeof node.connectionCount === 'number' ? node.connectionCount : 0;
-        const baseRadius = 8 + Math.min(conn * 2, 14);
-        const radius = isSelected || isHovered ? baseRadius * 1.25 : baseRadius;
+        // Make node size a bit smaller and sleek
+        const baseRadius = node.type === 'tag' ? 3.5 : 4 + Math.min(conn * 0.7, 8);
+        const radius = isSelected || isHovered ? baseRadius * 1.35 : baseRadius;
 
         // Outer glow halo for selected
         if (isSelected) {
           ctx.beginPath();
-          ctx.arc(node.x, node.y, radius + 6, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(31, 73, 89, 0.15)';
+          ctx.arc(node.x, node.y, radius + 5, 0, Math.PI * 2);
+          ctx.fillStyle = (node.color || '#1f4959') + '33'; // 20% opacity
           ctx.fill();
         }
 
         ctx.beginPath();
         ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
 
-        // Node Palette Styling strictly matching #FFFFFF, #242424, #5c7c89, #1f4959, #011425
+        const nodeColor = node.color || '#1f4959';
+
         if (isSelected) {
-          ctx.fillStyle = '#1f4959';
+          ctx.fillStyle = nodeColor;
           ctx.strokeStyle = '#011425';
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 2.5;
         } else if (isHovered) {
-          ctx.fillStyle = '#1f4959';
-          ctx.strokeStyle = '#5c7c89';
+          ctx.fillStyle = nodeColor;
+          ctx.strokeStyle = '#FFFFFF';
           ctx.lineWidth = 2;
         } else if (node.is_ghost) {
           ctx.fillStyle = '#FFFFFF';
-          ctx.strokeStyle = '#5c7c89';
-          ctx.lineWidth = 1.8;
-          ctx.setLineDash([3, 3]);
-        } else if (node.type === 'journal') {
-          ctx.fillStyle = '#011425';
-          ctx.strokeStyle = '#1f4959';
+          ctx.strokeStyle = '#64748b';
           ctx.lineWidth = 1.5;
+          ctx.setLineDash([2, 2]);
+        } else if (node.type === 'tag') {
+          ctx.fillStyle = '#d97706';
+          ctx.strokeStyle = '#b45309';
+          ctx.lineWidth = 1.2;
           ctx.setLineDash([]);
         } else {
-          ctx.fillStyle = '#1f4959';
-          ctx.strokeStyle = '#5c7c89';
-          ctx.lineWidth = 1.5;
+          ctx.fillStyle = nodeColor;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx.lineWidth = 1.2;
           ctx.setLineDash([]);
         }
 
@@ -313,19 +315,19 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
         // NODE LABEL
         const labelText = node.title || 'Untitled';
         ctx.font = isSelected || isHovered
-          ? '600 12px Fraunces, Georgia, serif'
-          : '500 10px Inter, sans-serif';
+          ? '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          : '500 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
         const textMetrics = ctx.measureText(labelText);
-        const labelY = node.y + radius + 12;
+        const labelY = node.y + radius + 11;
 
         // Label Background Pill for high readability
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
         ctx.fillRect(
-          node.x - textMetrics.width / 2 - 4,
-          labelY - 10,
-          textMetrics.width + 8,
-          14
+          node.x - textMetrics.width / 2 - 3,
+          labelY - 9,
+          textMetrics.width + 6,
+          13
         );
 
         ctx.fillStyle = isSelected || isHovered ? '#011425' : '#242424';
@@ -378,6 +380,12 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
     return { x, y };
   };
 
+  const getNodeHitRadius = (node: GraphNode) => {
+    const conn = typeof node.connectionCount === 'number' ? node.connectionCount : 0;
+    const baseRadius = node.type === 'tag' ? 4 : 5 + Math.min(conn * 0.7, 8);
+    return baseRadius * 1.6;
+  };
+
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const { x, y } = getCanvasCoords(e);
     const nodes = nodesRef.current;
@@ -385,11 +393,10 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
     // Find clicked node
     for (let i = nodes.length - 1; i >= 0; i--) {
       const n = nodes[i];
-      const conn = typeof n.connectionCount === 'number' ? n.connectionCount : 0;
-      const radius = 10 + Math.min(conn * 2, 14);
+      const radius = getNodeHitRadius(n);
       const dx = n.x - x;
       const dy = n.y - y;
-      if (dx * dx + dy * dy <= radius * radius * 1.5) {
+      if (dx * dx + dy * dy <= radius * radius) {
         draggingNodeRef.current = n.id;
         return;
       }
@@ -428,11 +435,10 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
     let hovered: string | null = null;
     for (let i = nodes.length - 1; i >= 0; i--) {
       const n = nodes[i];
-      const conn = typeof n.connectionCount === 'number' ? n.connectionCount : 0;
-      const radius = 10 + Math.min(conn * 2, 14);
+      const radius = getNodeHitRadius(n);
       const dx = n.x - x;
       const dy = n.y - y;
-      if (dx * dx + dy * dy <= radius * radius * 1.5) {
+      if (dx * dx + dy * dy <= radius * radius) {
         hovered = n.id;
         break;
       }
@@ -457,12 +463,13 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
     const nodes = nodesRef.current;
     for (let i = nodes.length - 1; i >= 0; i--) {
       const n = nodes[i];
-      const conn = typeof n.connectionCount === 'number' ? n.connectionCount : 0;
-      const radius = 10 + Math.min(conn * 2, 14);
+      const radius = getNodeHitRadius(n);
       const dx = n.x - x;
       const dy = n.y - y;
-      if (dx * dx + dy * dy <= radius * radius * 1.5) {
-        onSelectNote(n.id);
+      if (dx * dx + dy * dy <= radius * radius) {
+        if (!n.id.startsWith('tag-hub-')) {
+          onSelectNote(n.id);
+        }
         break;
       }
     }
@@ -513,18 +520,57 @@ export const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({
         </button>
       </div>
 
-      {/* Legend & Count Info */}
-      <div className="absolute top-4 left-4 bg-[#FFFFFF]/90 backdrop-blur border border-[#5c7c89]/30 rounded p-2.5 text-[11px] text-[#242424] space-y-1.5 shadow-sm">
-        <div className="flex items-center gap-2 font-medium">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#1f4959]" />
-          <span>Note Node ({graphData?.nodes.length || 0})</span>
+      {/* Rich Color-Coded Category Legend */}
+      <div className="absolute top-3 left-3 bg-[#FFFFFF]/95 backdrop-blur border border-[#5c7c89]/30 rounded-lg p-2.5 text-[10px] text-[#242424] space-y-1.5 shadow-md max-w-xs">
+        <div className="font-bold text-[#011425] pb-1 border-b border-[#5c7c89]/20 flex items-center justify-between">
+          <span>Knowledge Nodes</span>
+          <span className="font-mono text-[#5c7c89]">{graphData?.nodes.length || 0} nodes / {graphData?.edges.length || 0} links</span>
         </div>
-        <div className="flex items-center gap-2 font-medium">
-          <span className="w-2.5 h-2.5 rounded-full border-2 border-[#5c7c89] bg-[#FFFFFF]" />
-          <span>Ghost Reference</span>
+
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+          <div className="flex items-center gap-1.5 font-medium">
+            <span className="w-2 h-2 rounded-full bg-[#7c3aed]" />
+            <span>AI / Nemotron</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 font-medium">
+            <span className="w-2 h-2 rounded-full bg-[#0284c7]" />
+            <span>Architecture</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 font-medium">
+            <span className="w-2 h-2 rounded-full bg-[#059669]" />
+            <span>Concepts</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 font-medium">
+            <span className="w-2 h-2 rounded-full bg-[#e11d48]" />
+            <span>Config & Data</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 font-medium">
+            <span className="w-2 h-2 rounded-full bg-[#011425]" />
+            <span>Daily Journal</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 font-medium">
+            <span className="w-2 h-2 rounded-full bg-[#d97706]" />
+            <span>Tag Hubs</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 font-medium">
+            <span className="w-2 h-2 rounded-full border border-[#64748b] bg-white" />
+            <span>Ghost Ref</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 font-medium">
+            <span className="w-2 h-2 rounded-full bg-[#1f4959]" />
+            <span>General Note</span>
+          </div>
         </div>
-        <div className="text-[10px] pt-1 text-[#5c7c89] border-t border-[#5c7c89]/20 font-sans">
-          Click node to open • Drag to position
+
+        <div className="text-[9.5px] pt-1 text-[#5c7c89] border-t border-[#5c7c89]/20 font-sans">
+          Drag nodes • Zoom to explore dense clusters
         </div>
       </div>
     </div>
