@@ -7,6 +7,11 @@ const app = express();
 
 app.use(express.json({ limit: '25mb' }));
 
+// Keep health checks independent from database startup so deployments can be diagnosed.
+app.get(['/api/health', '/health'], (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
 // Middleware to normalize URL paths for Vercel serverless functions
 app.use((req, res, next) => {
   const original = (req.headers['x-matched-path'] as string) || (req.headers['x-now-route-matches'] as string) || req.url;
@@ -111,11 +116,6 @@ function parseTagsInput(tagsInput: any): string[] {
 // ------------------------------------------------------------------
 // API ROUTES (with dual path matching for /api/* and /*)
 // ------------------------------------------------------------------
-
-// Health check
-app.get(['/api/health', '/health'], (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
-});
 
 // GET /api/notes - Filter & Search
 app.get(['/api/notes', '/notes'], async (req, res) => {
@@ -750,6 +750,12 @@ app.post(['/api/ingest/file', '/ingest/file'], async (req, res) => {
     }
     res.status(500).json({ error: err.message || 'Failed to decode file' });
   }
+});
+
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Unhandled API error:', err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: err?.message || 'Internal server error' });
 });
 
 export default app;
